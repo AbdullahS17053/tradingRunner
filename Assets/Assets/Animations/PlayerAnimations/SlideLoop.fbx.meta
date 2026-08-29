@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 224fd581a54ad3048b7ea3cd00db7941
+guid: 32056655ab6fa3529a40599fb385a69a
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -31,10 +31,10 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: A_Sprint_ToCrouch_Masc
+      name: SlideLoop
       takeName: sprintToCrouch
       internalID: 965086860733634941
-      firstFrame: 25
+      firstFrame: 43
       lastFrame: 43
       wrapMode: 0
       orientationOffsetY: 0
@@ -42,7 +42,7 @@ ModelImporter:
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 0
+      loopTime: 1
       loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
