@@ -153,7 +153,10 @@ public class RunnerController : MonoBehaviour
     private void MovePlayer()
     {
         velocity.y += gravity * Time.deltaTime;
-        Vector3 moveVector = new Vector3(0, velocity.y, forwardSpeed) * Time.deltaTime;
+        
+        float currentForwardSpeed = forwardSpeed * GameManager.Instance.currentSpeedMultiplier;
+        
+        Vector3 moveVector = new Vector3(0, velocity.y, currentForwardSpeed) * Time.deltaTime;
 
         float currentX = transform.position.x;
         float moveX = Mathf.Lerp(currentX, targetXPosition, laneSwitchSpeed * Time.deltaTime) - currentX;
