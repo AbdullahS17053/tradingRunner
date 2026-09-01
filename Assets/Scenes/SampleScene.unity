@@ -550,6 +550,9 @@ MonoBehaviour:
   - prefab: {fileID: 4276569505224204588, guid: be19a4391eac66d9e8ab9109f4afc071,
       type: 3}
     weight: 1
+  - prefab: {fileID: 4276569505224204588, guid: 0a6d616e69be7f126862c25565983449,
+      type: 3}
+    weight: 1
   concurrentChunks: 6
   despawnDistance: 30
 --- !u!1 &1244121734
@@ -698,6 +701,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   takeProfit: 0
+  distanceRun: 0
+  correctTrades: 0
+  currentSpeedMultiplier: 0.8
+  speedIncreaseRate: 0.005
+  maxSpeedMultiplier: 3
+  gameOverPanel: {fileID: 0}
+  statsText: {fileID: 0}
 --- !u!4 &1475263685
 Transform:
   m_ObjectHideFlags: 0
@@ -742,7 +752,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e761aa41cb4143923910d7e7f7b1bc51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  player: {fileID: 0}
+  player: {fileID: 865523004}
   currentDistanceBehind: 20
   penaltyDistance: 7
   catchUpSpeed: 5
@@ -755,7 +765,7 @@ Transform:
   m_GameObject: {fileID: 1656601908}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -3.12}
+  m_LocalPosition: {x: 0, y: 1.19, z: -3.39}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
