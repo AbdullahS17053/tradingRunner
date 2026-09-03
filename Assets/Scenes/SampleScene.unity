@@ -753,9 +753,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 865523004}
-  currentDistanceBehind: 20
-  penaltyDistance: 7
-  catchUpSpeed: 5
+  currentDistanceBehind: 4
+  penaltyDistance: 1
+  catchUpSpeed: 20
 --- !u!4 &1656601910
 Transform:
   m_ObjectHideFlags: 0

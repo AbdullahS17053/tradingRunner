@@ -22,6 +22,17 @@ public class TradingChallenge : MonoBehaviour
         if (greenPathHologram != null) greenPathHologram.SetActive(false);
     }
 
+    private void OnEnable()
+    {
+        challengeActive = false;
+        
+        if (challengeUI != null) challengeUI.SetActive(false);
+        
+        if (redLaserWall != null) redLaserWall.SetActive(true);
+        
+        if (greenPathHologram != null) greenPathHologram.SetActive(false);
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player") && !challengeActive)
@@ -44,11 +55,21 @@ public class TradingChallenge : MonoBehaviour
         {
             if (isBuyScenario)
             {
-                challengeText.text = "RSI: 25 (Oversold)\nPrice > 200 EMA\nNearing Pivot Support (S1)\n\n< LEFT: BUY  |  RIGHT: SELL >";
+                challengeText.text = 
+                    "<size=120%><b><color=#FFD700> MARKET ANALYSIS </color></b></size>\n\n" +
+                    "RSI: <color=#00FF00>25 (Oversold)</color>\n" +
+                    "Trend: <color=#00FF00>Price > 200 EMA</color>\n" +
+                    "Level: <color=#00FF00>Nearing Support (S1)</color>\n\n" +
+                    "<b>PRESS <color=#00FF00>LEFT (BUY)</color> \n <color=#FF0000>RIGHT (SELL)</color></b>";
             }
             else
             {
-                challengeText.text = "RSI: 75 (Overbought)\nPrice < 200 EMA\nNearing Pivot Resistance (R1)\n\n< LEFT: BUY  |  RIGHT: SELL >";
+                challengeText.text = 
+                    "<size=120%><b><color=#FFD700> MARKET ANALYSIS </color></b></size>\n\n" +
+                    "RSI: <color=#FF0000>75 (Overbought)</color>\n" +
+                    "Trend: <color=#FF0000>Price < 200 EMA</color>\n" +
+                    "Level: <color=#FF0000>Nearing Resistance (R1)</color>\n\n" +
+                    "<b>PRESS <color=#00FF00>LEFT (BUY)</color> \n <color=#FF0000>RIGHT (SELL)</color></b>";
             }
         }
     }

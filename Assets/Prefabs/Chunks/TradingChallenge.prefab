@@ -511,6 +511,26 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5294480413025225264, guid: a18445f648589e82bab3ff1e032c3bd0,
+        type: 3}
+      propertyPath: m_UiScaleMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5294480413025225264, guid: a18445f648589e82bab3ff1e032c3bd0,
+        type: 3}
+      propertyPath: m_ScreenMatchMode
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5294480413025225264, guid: a18445f648589e82bab3ff1e032c3bd0,
+        type: 3}
+      propertyPath: m_ReferenceResolution.x
+      value: 1920
+      objectReference: {fileID: 0}
+    - target: {fileID: 5294480413025225264, guid: a18445f648589e82bab3ff1e032c3bd0,
+        type: 3}
+      propertyPath: m_ReferenceResolution.y
+      value: 1080
+      objectReference: {fileID: 0}
     - target: {fileID: 8158715061405596692, guid: a18445f648589e82bab3ff1e032c3bd0,
         type: 3}
       propertyPath: m_Name

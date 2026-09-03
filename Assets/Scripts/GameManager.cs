@@ -61,8 +61,6 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
         
-        Time.timeScale = 0f; 
-
         int highScore = PlayerPrefs.GetInt("HighScore_Distance", 0);
         if (distanceRun > highScore)
         {
@@ -70,16 +68,10 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.SetInt("HighScore_Distance", highScore);
         }
 
-        if (gameOverPanel != null) gameOverPanel.SetActive(true);
-        
-        if (statsText != null)
-        {
-            statsText.text = $"CAUGHT BY FOMO!\n\n" +
-                             $"Distance: {Mathf.FloorToInt(distanceRun)}m\n" +
-                             $"Take Profits: {takeProfit}\n" +
-                             $"Correct Trades: {correctTrades}\n" +
-                             $"High Score: {highScore}m";
-        }
+        Debug.Log($"CAUGHT BY FOMO! Distance: {Mathf.FloorToInt(distanceRun)}m | " +
+                  $"Take Profits: {takeProfit} | Correct Trades: {correctTrades} | High Score: {highScore}m");
+
+        RestartGame();
     }
 
     public void RestartGame()
