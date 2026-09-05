@@ -7,7 +7,6 @@ public class TradingChallenge : MonoBehaviour
     public TextMeshProUGUI challengeText;
     
     public GameObject redLaserWall;
-    public GameObject greenPathHologram;
 
     private bool challengeActive = false;
     private bool isBuyScenario;
@@ -19,7 +18,6 @@ public class TradingChallenge : MonoBehaviour
         fomo = FindObjectOfType<FOMOController>();
         
         if (challengeUI != null) challengeUI.SetActive(false);
-        if (greenPathHologram != null) greenPathHologram.SetActive(false);
     }
 
     private void OnEnable()
@@ -30,7 +28,6 @@ public class TradingChallenge : MonoBehaviour
         
         if (redLaserWall != null) redLaserWall.SetActive(true);
         
-        if (greenPathHologram != null) greenPathHologram.SetActive(false);
     }
 
     private void OnTriggerEnter(Collider other)
@@ -104,7 +101,6 @@ public class TradingChallenge : MonoBehaviour
             }
             
             if (redLaserWall != null) redLaserWall.SetActive(false);
-            if (greenPathHologram != null) greenPathHologram.SetActive(true);
             
             Debug.Log("STRATEGY CONFIRMED - Path Opened!");
         }

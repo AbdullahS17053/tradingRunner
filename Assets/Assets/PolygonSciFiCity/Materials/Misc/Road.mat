@@ -106,7 +106,7 @@ Material:
     - _BumpScale: 1
     - _Cutoff: 0.5
     - _DetailNormalMapScale: 1
-    - _DirtAmount: 0.9
+    - _DirtAmount: 1.2
     - _DstBlend: 0
     - _FallOff: 5
     - _GlossMapScale: 1
