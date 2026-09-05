@@ -31,7 +31,7 @@ public class ChunkSpawner : MonoBehaviour
     private TrackChunk lastSpawnedPrefab;
     private int consecutiveSpawnCount = 0;
 
-    private void Start()
+    public void Start()
     {
         InitializePools();
 
@@ -50,7 +50,7 @@ public class ChunkSpawner : MonoBehaviour
         }
     }
 
-    private void Update()
+    public void Update()
     {
         if (activeChunks.Count == 0) return;
 
