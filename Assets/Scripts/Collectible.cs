@@ -10,6 +10,7 @@ public class Collectible : MonoBehaviour
         if (collider.CompareTag("Player"))
         {
             GameManager.Instance.takeProfit += 1;
+            SoundManager.Instance.PlaySFX(SoundManager.Instance.collectTPSound);
             this.gameObject.SetActive(false);
         }
     }

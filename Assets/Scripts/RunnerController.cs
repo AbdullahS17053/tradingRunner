@@ -4,6 +4,8 @@ using UnityEngine.SceneManagement;
 [RequireComponent(typeof(CharacterController))]
 public class RunnerController : MonoBehaviour
 {
+    public static RunnerController Instance { get; private set; }
+
     [Header("References")]
     public Animator animator;
 
@@ -14,13 +16,13 @@ public class RunnerController : MonoBehaviour
     [Header("Movement Settings")]
     public float forwardSpeed = 15f;
     public float laneSwitchSpeed = 12f;
-    
+
     [Header("Jump & Slide Settings")]
     public float jumpForce = 8f;
     public float gravity = -20f;
     public float slideDuration = 1.0f;
     [Tooltip("How fast the character slams down when sliding mid-air")]
-    public float fastFallVelocity = -20f; 
+    public float fastFallVelocity = -20f;
 
     private CharacterController controller;
     private int currentLane;
@@ -33,6 +35,16 @@ public class RunnerController : MonoBehaviour
     private bool isSliding = false;
     private float slideTimer;
 
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
+
     private void Start()
     {
         controller = GetComponent<CharacterController>();
@@ -40,10 +52,10 @@ public class RunnerController : MonoBehaviour
         originalCenter = controller.center;
 
         if (animator == null) animator = GetComponentInChildren<Animator>();
-        
+
         currentLane = numberOfLanes / 2;
         targetXPosition = GetLaneXPosition(currentLane);
-        
+
         Vector3 startPos = transform.position;
         startPos.x = targetXPosition;
         transform.position = startPos;
@@ -51,85 +63,81 @@ public class RunnerController : MonoBehaviour
 
     private void Update()
     {
-        HandleInput();
+        HandleKeyboardInput();
         MovePlayer();
         UpdateAnimations();
         HandleSlidingTimer();
     }
 
-   private void HandleInput()
+    private void HandleKeyboardInput()
     {
-        int desiredLane = currentLane;
-
+        // Lane Switching
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
-            desiredLane--;
+            MoveLane(-1);
         else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
-            desiredLane++;
+            MoveLane(1);
 
-        desiredLane = Mathf.Clamp(desiredLane, 0, numberOfLanes - 1);
+        // Jump & Slide
+        if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.Space))
+            TriggerJump();
+        else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
+            TriggerSlide();
+    }
+
+    // --- PUBLIC METHODS FOR SWIPE CONTROLLER ---
+
+    public void MoveLane(int direction)
+    {
+        int desiredLane = Mathf.Clamp(currentLane + direction, 0, numberOfLanes - 1);
 
         if (desiredLane != currentLane)
         {
             if (controller.isGrounded && !isSliding)
             {
                 if (desiredLane < currentLane)
-                {
                     animator.SetTrigger("DodgeLeft");
-                }
                 else
-                {
                     animator.SetTrigger("DodgeRight");
-                }
             }
-            
-            // The mathematical movement still happens regardless of animation state
+
             currentLane = desiredLane;
             targetXPosition = GetLaneXPosition(currentLane);
         }
+    }
 
+    public void TriggerJump()
+    {
         if (controller.isGrounded)
         {
-            if (velocity.y < 0) velocity.y = -2f; 
-            
-            if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.Space))
-            {
-                ExecuteJump();
-            }
-            else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-            {
-                ExecuteSlide();
-            }
+            if (isSliding) StopSliding();
+
+            velocity.y = jumpForce;
+            animator.ResetTrigger("Slide");
+            animator.SetTrigger("Jump");
+        }
+    }
+
+    public void TriggerSlide()
+    {
+        if (controller.isGrounded)
+        {
+            isSliding = true;
+            slideTimer = slideDuration;
+
+            controller.height = originalHeight / 2f;
+            controller.center = new Vector3(originalCenter.x, originalCenter.y / 2f, originalCenter.z);
+
+            animator.ResetTrigger("Jump");
+            animator.SetTrigger("Slide");
         }
         else
         {
-            if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
-            {
-                velocity.y = fastFallVelocity; 
-            }
+            // Fast fall if swiping down mid-air
+            velocity.y = fastFallVelocity;
         }
     }
 
-    private void ExecuteJump()
-    {
-        if (isSliding) StopSliding();
-        
-        velocity.y = jumpForce;
-        
-        animator.ResetTrigger("Slide"); 
-        animator.SetTrigger("Jump");
-    }
-
-    private void ExecuteSlide()
-    {
-        isSliding = true;
-        slideTimer = slideDuration; // Reset the timer
-        
-        controller.height = originalHeight / 2f;
-        controller.center = new Vector3(originalCenter.x, originalCenter.y / 2f, originalCenter.z);
-
-        animator.ResetTrigger("Jump");
-        animator.SetTrigger("Slide");
-    }
+    // --- INTERNAL MOVEMENT LOGIC ---
 
     private void HandleSlidingTimer()
     {
@@ -152,10 +160,15 @@ public class RunnerController : MonoBehaviour
 
     private void MovePlayer()
     {
+        if (controller.isGrounded && velocity.y < 0)
+            velocity.y = -2f;
+
         velocity.y += gravity * Time.deltaTime;
-        
-        float currentForwardSpeed = forwardSpeed * GameManager.Instance.currentSpeedMultiplier;
-        
+
+        // Use a safe check for GameManager in case it's missing from the scene while testing
+        float currentSpeedMultiplier = GameManager.Instance != null ? GameManager.Instance.currentSpeedMultiplier : 1f;
+        float currentForwardSpeed = forwardSpeed * currentSpeedMultiplier;
+
         Vector3 moveVector = new Vector3(0, velocity.y, currentForwardSpeed) * Time.deltaTime;
 
         float currentX = transform.position.x;
@@ -190,7 +203,6 @@ public class RunnerController : MonoBehaviour
     private void Die()
     {
         Debug.Log("Hit an obstacle! Restarting level...");
-        
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }
