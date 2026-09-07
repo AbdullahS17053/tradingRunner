@@ -72,7 +72,7 @@ public class GameManager : MonoBehaviour
     {
         if (hudDistanceText != null)
         {
-            hudDistanceText.text = $"Distance: {Mathf.FloorToInt(distanceRun)}m";
+            hudDistanceText.text = $"{Mathf.FloorToInt(distanceRun)}m";
         }
     }
 

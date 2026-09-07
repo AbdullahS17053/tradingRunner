@@ -9,6 +9,6 @@ public class GameUI : MonoBehaviour
 
     void Update()
     {
-        scoreText.text = "Take Profit: " + GameManager.Instance.takeProfit.ToString();
+        scoreText.text = GameManager.Instance.takeProfit.ToString();
     }
 }

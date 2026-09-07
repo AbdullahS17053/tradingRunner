@@ -53,24 +53,20 @@ public class TradingChallenge : MonoBehaviour
             if (isBuyScenario)
             {
                 challengeText.text = 
-                    "<size=120%><b><color=#FFD700> MARKET ANALYSIS </color></b></size>\n\n" +
                     "RSI: <color=#00FF00>25 (Oversold)</color>\n" +
                     "Trend: <color=#00FF00>Price > 200 EMA</color>\n" +
-                    "Level: <color=#00FF00>Nearing Support (S1)</color>\n\n" +
-                    "<b>PRESS <color=#00FF00>LEFT (BUY)</color> \n <color=#FF0000>RIGHT (SELL)</color></b>";
+                    "Level: <color=#00FF00>Nearing Support (S1)</color>\n\n";
             }
             else
             {
                 challengeText.text = 
-                    "<size=120%><b><color=#FFD700> MARKET ANALYSIS </color></b></size>\n\n" +
                     "RSI: <color=#FF0000>75 (Overbought)</color>\n" +
                     "Trend: <color=#FF0000>Price < 200 EMA</color>\n" +
-                    "Level: <color=#FF0000>Nearing Resistance (R1)</color>\n\n" +
-                    "<b>PRESS <color=#00FF00>LEFT (BUY)</color> \n <color=#FF0000>RIGHT (SELL)</color></b>";
+                    "Level: <color=#FF0000>Nearing Resistance (R1)</color>\n\n";
             }
         }
     }
-
+/*
     private void Update()
     {
         if (!challengeActive) return;
@@ -83,6 +79,16 @@ public class TradingChallenge : MonoBehaviour
         {
             ResolveChallenge(false);
         }
+    }*/
+
+    public void ResourceChallengeTrue()
+    {
+        ResolveChallenge(true);
+    }
+
+    public void ResourceChallengeFalse()
+    {
+        ResolveChallenge(false);
     }
 
     public void ResolveChallenge(bool playerChoseBuy)
