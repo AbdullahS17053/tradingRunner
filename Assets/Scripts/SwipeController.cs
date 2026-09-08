@@ -8,6 +8,8 @@ public class SwipeController : MonoBehaviour
     private Vector2 touchStartPos;
     private Vector2 touchEndPos;
 
+    private bool hasSwiped = false;
+
     private void Update()
     {
         if (Input.touchCount > 0)
@@ -17,22 +19,32 @@ public class SwipeController : MonoBehaviour
             if (touch.phase == TouchPhase.Began)
             {
                 touchStartPos = touch.position;
+                hasSwiped = false; // Unlock on new touch
             }
-            else if (touch.phase == TouchPhase.Ended)
+            else if (touch.phase == TouchPhase.Moved && !hasSwiped)
             {
                 touchEndPos = touch.position;
                 CheckSwipe();
+            }
+            else if (touch.phase == TouchPhase.Ended)
+            {
+                hasSwiped = false;
             }
         }
 
         if (Input.GetMouseButtonDown(0))
         {
             touchStartPos = Input.mousePosition;
+            hasSwiped = false; // Unlock on new click
         }
-        else if (Input.GetMouseButtonUp(0))
+        else if (Input.GetMouseButton(0) && !hasSwiped)
         {
             touchEndPos = Input.mousePosition;
             CheckSwipe();
+        }
+        else if (Input.GetMouseButtonUp(0))
+        {
+            hasSwiped = false;
         }
     }
 
@@ -58,6 +70,8 @@ public class SwipeController : MonoBehaviour
                 else
                     SwipeDown();
             }
+
+            hasSwiped = true;
         }
     }
 
