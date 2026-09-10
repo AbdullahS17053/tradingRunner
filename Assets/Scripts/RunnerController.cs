@@ -29,7 +29,6 @@ public class RunnerController : MonoBehaviour
     private Vector3 velocity;
     private float targetXPosition;
 
-    // Collider management
     private float originalHeight;
     private Vector3 originalCenter;
     private bool isSliding = false;
@@ -71,20 +70,17 @@ public class RunnerController : MonoBehaviour
 
     private void HandleKeyboardInput()
     {
-        // Lane Switching
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
             MoveLane(-1);
         else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
             MoveLane(1);
 
-        // Jump & Slide
         if (Input.GetKeyDown(KeyCode.UpArrow) || Input.GetKeyDown(KeyCode.W) || Input.GetKeyDown(KeyCode.Space))
             TriggerJump();
         else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
             TriggerSlide();
     }
 
-    // --- PUBLIC METHODS FOR SWIPE CONTROLLER ---
 
     public void MoveLane(int direction)
     {
@@ -132,12 +128,10 @@ public class RunnerController : MonoBehaviour
         }
         else
         {
-            // Fast fall if swiping down mid-air
             velocity.y = fastFallVelocity;
         }
     }
 
-    // --- INTERNAL MOVEMENT LOGIC ---
 
     private void HandleSlidingTimer()
     {
@@ -165,7 +159,6 @@ public class RunnerController : MonoBehaviour
 
         velocity.y += gravity * Time.deltaTime;
 
-        // Use a safe check for GameManager in case it's missing from the scene while testing
         float currentSpeedMultiplier = GameManager.Instance != null ? GameManager.Instance.currentSpeedMultiplier : 1f;
         float currentForwardSpeed = forwardSpeed * currentSpeedMultiplier;
 
@@ -202,7 +195,7 @@ public class RunnerController : MonoBehaviour
 
     private void Die()
     {
-        Debug.Log("Hit an obstacle! Restarting level...");
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SoundManager.Instance.StopMusic();
+        GameManager.Instance.TriggerGameOver();
     }
 }

@@ -22,7 +22,10 @@ public class GameManager : MonoBehaviour
 
     [Header("Game Over UI References")]
     public GameObject gameOverPanel;
-    public TextMeshProUGUI statsText;
+    public TextMeshProUGUI finalDistanceText;
+    public TextMeshProUGUI finalTradesText;
+    public TextMeshProUGUI finalTPText;
+    public TextMeshProUGUI highScoreText;
 
     private bool isGameOver = false;
 
@@ -40,14 +43,18 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        UpdateTradesUI(); // Initialize the UI to show 0 at the start
+        UpdateTradesUI();
+
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(false);
+        }
     }
 
     private void Update()
     {
         if (isGameOver) return;
 
-        // Calculate distance and update UI
         distanceRun += (10f * currentSpeedMultiplier) * Time.deltaTime;
         UpdateDistanceUI();
 
@@ -72,7 +79,7 @@ public class GameManager : MonoBehaviour
     {
         if (hudDistanceText != null)
         {
-            hudDistanceText.text = $"{Mathf.FloorToInt(distanceRun)}m";
+            hudDistanceText.text = $"Distance: {Mathf.FloorToInt(distanceRun)}m";
         }
     }
 
@@ -89,17 +96,32 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
 
-        int highScore = PlayerPrefs.GetInt("HighScore_Distance", 0);
-        if (distanceRun > highScore)
+        Time.timeScale = 0f;
+
+        if (SoundManager.Instance != null)
         {
-            highScore = Mathf.FloorToInt(distanceRun);
-            PlayerPrefs.SetInt("HighScore_Distance", highScore);
+            SoundManager.Instance.StopMusic();
         }
 
-        Debug.Log($"CAUGHT BY FOMO! Distance: {Mathf.FloorToInt(distanceRun)}m | " +
-        $"Take Profits: {takeProfit} | Correct Trades: {correctTrades} | High Score: {highScore}m");
+        int currentTotalScore = Mathf.FloorToInt(distanceRun) + (correctTrades * 5) + (takeProfit * 10);
 
-        RestartGame();
+        int highScore = PlayerPrefs.GetInt("HighScore_Total", 0);
+        if (currentTotalScore > highScore)
+        {
+            highScore = currentTotalScore;
+            PlayerPrefs.SetInt("HighScore_Total", highScore);
+            PlayerPrefs.Save();
+        }
+
+        if (gameOverPanel != null)
+        {
+            gameOverPanel.SetActive(true);
+        }
+
+        if (finalDistanceText != null) finalDistanceText.text = $"Distance: {Mathf.FloorToInt(distanceRun)}m";
+        if (finalTradesText != null) finalTradesText.text = $"Trades: {correctTrades}";
+        if (finalTPText != null) finalTPText.text = $"Take Profits: {takeProfit}";
+        if (highScoreText != null) highScoreText.text = $"High Score: {highScore}";
     }
 
     public void RestartGame()

@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class SoundManager : MonoBehaviour
 {
-    // The Singleton instance
     public static SoundManager Instance { get; private set; }
 
     [Header("Audio Sources")]
@@ -51,5 +50,13 @@ public class SoundManager : MonoBehaviour
         if (clip == null) return;
 
         sfxSource.PlayOneShot(clip);
+    }
+
+    public void StopMusic()
+    {
+        if (musicSource != null && musicSource.isPlaying)
+        {
+            musicSource.Stop();
+        }
     }
 }
