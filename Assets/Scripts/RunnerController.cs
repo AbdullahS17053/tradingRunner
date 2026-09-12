@@ -196,6 +196,7 @@ public class RunnerController : MonoBehaviour
     private void Die()
     {
         SoundManager.Instance.StopMusic();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance.crashSound);
         GameManager.Instance.TriggerGameOver();
     }
 }

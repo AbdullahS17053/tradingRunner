@@ -6,6 +6,9 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
+    [Header("Player Reference")]
+    public Animator playerAnimator;
+
     [Header("Stats")]
     public int takeProfit = 0;
     public float distanceRun = 0f;
@@ -28,6 +31,7 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI highScoreText;
 
     private bool isGameOver = false;
+    private bool gameStarted = false;
 
     private void Awake()
     {
@@ -49,11 +53,20 @@ public class GameManager : MonoBehaviour
         {
             gameOverPanel.SetActive(false);
         }
+
+        if (SceneManager.GetActiveScene().buildIndex != 1)
+        {
+            gameStarted = true;
+            if (playerAnimator != null)
+            {
+                playerAnimator.SetBool("GameStarted", true);
+            }
+        }
     }
 
     private void Update()
     {
-        if (isGameOver) return;
+        if (isGameOver || !gameStarted) return;
 
         distanceRun += (10f * currentSpeedMultiplier) * Time.deltaTime;
         UpdateDistanceUI();
@@ -91,6 +104,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void StartGame()
+    {
+        if (LevelLoader.Instance != null)
+        {
+            LevelLoader.Instance.LoadScene(0);
+        }
+    }
+
     public void TriggerGameOver()
     {
         if (isGameOver) return;
@@ -101,6 +122,7 @@ public class GameManager : MonoBehaviour
         if (SoundManager.Instance != null)
         {
             SoundManager.Instance.StopMusic();
+            SoundManager.Instance.PlaySFX(SoundManager.Instance.gameOverSound);
         }
 
         int currentTotalScore = Mathf.FloorToInt(distanceRun) + (correctTrades * 5) + (takeProfit * 10);
@@ -126,7 +148,14 @@ public class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        if (LevelLoader.Instance != null)
+        {
+            LevelLoader.Instance.RestartLevel();
+        }
+        else
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        }
     }
 }

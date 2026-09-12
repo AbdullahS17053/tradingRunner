@@ -15,8 +15,9 @@ public class SoundManager : MonoBehaviour
 
     [Header("Sound Effects")]
     public AudioClip collectTPSound;
-    public AudioClip jumpSound;
-    public AudioClip slideSound;
+    public AudioClip correctStrategySound;
+    public AudioClip wrongStrategySound;
+    public AudioClip gameOverSound;
     public AudioClip crashSound;
 
     private void Awake()
