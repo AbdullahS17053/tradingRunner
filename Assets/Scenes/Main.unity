@@ -1377,6 +1377,7 @@ GameObject:
   - component: {fileID: 1244121736}
   - component: {fileID: 1244121735}
   - component: {fileID: 1244121739}
+  - component: {fileID: 1244121740}
   m_Layer: 5
   m_Name: GameUI
   m_TagString: Untagged
@@ -1481,6 +1482,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   scoreText: {fileID: 1182534604}
+--- !u!95 &1244121740
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1244121734}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 86c2ec74952e3470faf41fadc2d3fd2a, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1297015387
 GameObject:
   m_ObjectHideFlags: 0
@@ -5622,7 +5645,7 @@ PrefabInstance:
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 38.862854
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
@@ -5632,27 +5655,27 @@ PrefabInstance:
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -641.49445
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -938.6892
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
