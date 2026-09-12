@@ -96,7 +96,7 @@ public class TradingChallenge : MonoBehaviour
 
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.currentSpeedMultiplier += 0.25f;
+                GameManager.Instance.currentSpeedMultiplier += 0.02f;
             }
 
             if (SoundManager.Instance != null) SoundManager.Instance.PlaySFX(SoundManager.Instance.wrongStrategySound);
