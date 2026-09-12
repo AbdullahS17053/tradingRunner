@@ -331,7 +331,7 @@ GameObject:
   - component: {fileID: 1538945301343986784}
   m_Layer: 0
   m_Name: Laser
-  m_TagString: Untagged
+  m_TagString: Obstacle
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -345,8 +345,8 @@ Transform:
   m_GameObject: {fileID: 5773503197438494956}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.6, z: 5.86}
-  m_LocalScale: {x: 12.77, y: 0.2, z: 0.2}
+  m_LocalPosition: {x: 0, y: 1.38, z: 5.86}
+  m_LocalScale: {x: 14, y: 0.2, z: 0.2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2828804922138445830}
@@ -416,7 +416,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -615,11 +615,21 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 6413371410632638269}
+    - target: {fileID: 1360709968188190736, guid: bba93a7a0b8c7a70aa46e3dd830d378f,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: SelectBuy
+      objectReference: {fileID: 0}
     - target: {fileID: 5310326706023118025, guid: bba93a7a0b8c7a70aa46e3dd830d378f,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 6413371410632638269}
+    - target: {fileID: 5310326706023118025, guid: bba93a7a0b8c7a70aa46e3dd830d378f,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: SelectSell
+      objectReference: {fileID: 0}
     - target: {fileID: 8030838964447194014, guid: bba93a7a0b8c7a70aa46e3dd830d378f,
         type: 3}
       propertyPath: m_Pivot.x
