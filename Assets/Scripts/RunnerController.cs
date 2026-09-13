@@ -207,6 +207,13 @@ public class RunnerController : MonoBehaviour
         SoundManager.Instance.StopMusic();
         SoundManager.Instance.PlaySFX(SoundManager.Instance.crashSound);
         SoundManager.Instance.PlaySFX(SoundManager.Instance.gameOverSound);
+
+        TradingChallenge[] activeChallenges = FindObjectsOfType<TradingChallenge>();
+        foreach (TradingChallenge challenge in activeChallenges)
+        {
+            challenge.ForceCancelChallenge();
+        }
+
         if (deathParticles != null) deathParticles.Play();
         if (animator != null) animator.SetTrigger("Die");
 

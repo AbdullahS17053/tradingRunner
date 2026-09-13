@@ -19,6 +19,10 @@ public class SoundManager : MonoBehaviour
     public AudioClip wrongStrategySound;
     public AudioClip gameOverSound;
     public AudioClip crashSound;
+    public AudioClip fomoLaserShotSound;
+    public AudioClip fomoOpenGunSound;
+    public AudioClip fomoAscendSound;
+    public AudioClip fomoDescendSound;
 
     private void Awake()
     {

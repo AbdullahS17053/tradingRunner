@@ -92,7 +92,7 @@ public class GameManager : MonoBehaviour
     {
         if (hudDistanceText != null)
         {
-            hudDistanceText.text = $"Distance: {Mathf.FloorToInt(distanceRun)}m";
+            hudDistanceText.text = $"{Mathf.FloorToInt(distanceRun)}m";
         }
     }
 
@@ -100,7 +100,7 @@ public class GameManager : MonoBehaviour
     {
         if (hudTradesText != null)
         {
-            hudTradesText.text = $"Good Trades: {correctTrades}";
+            hudTradesText.text = $"{correctTrades}";
         }
     }
 
@@ -117,7 +117,13 @@ public class GameManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
 
-        Time.timeScale = 0f;
+        Time.timeScale = 1.0f;
+
+        GameObject[] activeTradingMenus = GameObject.FindGameObjectsWithTag("TradingMenu");
+        foreach (GameObject menu in activeTradingMenus)
+        {
+            menu.SetActive(false);
+        }
 
         int currentTotalScore = Mathf.FloorToInt(distanceRun) + (correctTrades * 5) + (takeProfit * 10);
 
@@ -134,10 +140,10 @@ public class GameManager : MonoBehaviour
             gameOverPanel.SetActive(true);
         }
 
-        if (finalDistanceText != null) finalDistanceText.text = $"Distance: {Mathf.FloorToInt(distanceRun)}m";
-        if (finalTradesText != null) finalTradesText.text = $"Trades: {correctTrades}";
-        if (finalTPText != null) finalTPText.text = $"Take Profits: {takeProfit}";
-        if (highScoreText != null) highScoreText.text = $"High Score: {highScore}";
+        if (finalDistanceText != null) finalDistanceText.text = $"{Mathf.FloorToInt(distanceRun)}m";
+        if (finalTradesText != null) finalTradesText.text = $"{correctTrades}";
+        if (finalTPText != null) finalTPText.text = $"{takeProfit}";
+        if (highScoreText != null) highScoreText.text = $"{highScore}";
     }
 
     public void RestartGame()

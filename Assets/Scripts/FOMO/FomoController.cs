@@ -20,18 +20,19 @@ public class FOMOController : MonoBehaviour
     [Header("Visual Effects (Laser & Death)")]
     public LineRenderer fomoLaser;
     public Transform fomoLaserOrigin;
+    public Animator fomoAnimator;
 
     [Header("Cinematic Flight Settings")]
     public float ascendHeight = 15f;
-    [Tooltip("Time it takes for FOMO to slowly fly up out of frame")]
     public float ascendDuration = 2.0f;
     public float dropHeight = 15f;
-    [Tooltip("Time it takes for FOMO to slowly descend in front of the player")]
     public float descendDuration = 2.0f;
     public float hoverForwardDistance = 4.0f;
     public float hoverLevitationHeight = 2.5f;
-    [Tooltip("Delay between the player getting scared and the laser firing")]
-    public float scaredToLaserDelay = 1.5f;
+
+    [Header("Attack Timing")]
+    public float captureToLaserDelay = 1.5f;
+    public float laserFadeDuration = 0.2f;
 
     private float timeSinceLastMistake = 0f;
     private bool isCatching = false;
@@ -66,30 +67,35 @@ public class FOMOController : MonoBehaviour
         timeSinceLastMistake = 0f;
         currentDistanceBehind -= penaltyDistance;
         currentDistanceBehind = Mathf.Max(currentDistanceBehind, 0f);
-
-        Debug.Log("FOMO got closer! Distance is now: " + currentDistanceBehind);
     }
 
     private IEnumerator CatchPlayerSequence()
     {
         isCatching = true;
-        Time.timeScale = 0f; // Freeze game world
 
-        // 1. FOMO slowly ascends out of the camera view
+        if (RunnerController.Instance != null)
+        {
+            RunnerController.Instance.enabled = false;
+        }
+
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetBool("IsCaptured", true);
+            playerAnimator.Play("StandingIdle", 0, 0f);
+        }
+
         Vector3 startPos = transform.position;
         Vector3 skyPos = startPos + (Vector3.up * ascendHeight);
 
         float elapsed = 0f;
         while (elapsed < ascendDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
-            // Using SmoothStep creates a nice ease-in/ease-out effect instead of stiff linear movement
+            elapsed += Time.deltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / ascendDuration);
             transform.position = Vector3.Lerp(startPos, skyPos, t);
             yield return null;
         }
 
-        // 2. FOMO teleports high above the front of the player and slowly descends
         Vector3 targetPos = player.position + (Vector3.forward * hoverForwardDistance) + (Vector3.up * hoverLevitationHeight);
         Vector3 dropPos = targetPos + (Vector3.up * dropHeight);
 
@@ -98,49 +104,62 @@ public class FOMOController : MonoBehaviour
 
         while (elapsed < descendDuration)
         {
-            elapsed += Time.unscaledDeltaTime;
+            elapsed += Time.deltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / descendDuration);
             transform.position = Vector3.Lerp(dropPos, targetPos, t);
 
-            // Constantly look at the player's chest while dropping in
             transform.LookAt(player.position + (Vector3.up * 1f));
             yield return null;
         }
 
-        // Snap to exact position to finalize movement
         transform.position = targetPos;
         transform.LookAt(player.position + (Vector3.up * 1f));
 
-        // 3. Player stops and plays Scared Animation
-        if (playerAnimator != null)
+        if (fomoAnimator != null)
         {
-            playerAnimator.SetTrigger("Scared");
+            fomoAnimator.SetTrigger("Attack");
+            SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoLaserShotSound);
         }
 
-        // Let the Scared animation play out before firing the laser
-        yield return new WaitForSecondsRealtime(scaredToLaserDelay);
+        yield return new WaitForSeconds(captureToLaserDelay);
 
-        // 4. FOMO shoots the laser
         if (fomoLaser != null && fomoLaserOrigin != null)
         {
+            fomoLaser.gameObject.SetActive(true);
+            fomoLaser.useWorldSpace = true;
             fomoLaser.enabled = true;
+
+            fomoLaser.startWidth = 0.1f;
+            fomoLaser.endWidth = 0.1f;
             fomoLaser.SetPosition(0, fomoLaserOrigin.position);
             fomoLaser.SetPosition(1, player.position + (Vector3.up * 1f));
         }
 
-        // 5. Player plays Death Animation
         if (playerAnimator != null)
         {
-            playerAnimator.SetTrigger("Die");
+            playerAnimator.Play("Die", 0, 0f);
         }
 
-        // Wait for the player to fall over
-        yield return new WaitForSecondsRealtime(1.5f);
+        float fadeElapsed = 0f;
+        while (fadeElapsed < laserFadeDuration)
+        {
+            fadeElapsed += Time.deltaTime;
+            if (fomoLaser != null)
+            {
+                float currentWidth = Mathf.Lerp(0.1f, 0f, fadeElapsed / laserFadeDuration);
+                fomoLaser.startWidth = currentWidth;
+                fomoLaser.endWidth = currentWidth;
+            }
+            yield return null;
+        }
 
-        // Clean up laser
-        if (fomoLaser != null) fomoLaser.enabled = false;
+        if (fomoLaser != null)
+        {
+            fomoLaser.enabled = false;
+        }
 
-        // 6. Trigger Game Over UI
+        yield return new WaitForSeconds(1.5f - laserFadeDuration);
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.TriggerGameOver();

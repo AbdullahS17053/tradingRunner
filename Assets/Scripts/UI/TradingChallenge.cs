@@ -4,7 +4,12 @@ using TMPro;
 public class TradingChallenge : MonoBehaviour
 {
     public GameObject challengeUI;
-    public TextMeshProUGUI challengeText;
+
+    [Header("Stat Texts")]
+    public TextMeshProUGUI rsiText;
+    public TextMeshProUGUI trendText;
+    public TextMeshProUGUI keyZoneText;
+
     public GameObject redLaserWall;
 
     private bool challengeActive = false;
@@ -24,6 +29,14 @@ public class TradingChallenge : MonoBehaviour
         if (redLaserWall != null) redLaserWall.SetActive(true);
     }
 
+    private void Update()
+    {
+        if (challengeActive && RunnerController.Instance != null && !RunnerController.Instance.enabled)
+        {
+            ForceCancelChallenge();
+        }
+    }
+
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player") && !challengeActive)
@@ -35,30 +48,22 @@ public class TradingChallenge : MonoBehaviour
     private void StartChallenge()
     {
         challengeActive = true;
-
         Time.timeScale = 0.2f;
         if (challengeUI != null) challengeUI.SetActive(true);
 
         isBuyScenario = Random.value > 0.5f;
 
-        if (challengeText != null)
+        if (isBuyScenario)
         {
-            if (isBuyScenario)
-            {
-                challengeText.text =
-                "RSI: <color=#00FF00>25 (Oversold)</color>\n" +
-                "Trend: <color=#00FF00>Price > 200 EMA</color>\n" +
-                "Pivot Point: <color=#00FF00>At Support (S1)</color>\n\n" +
-                "ACTION: ?";
-            }
-            else
-            {
-                challengeText.text =
-                "RSI: <color=#FF0000>75 (Overbought)</color>\n" +
-                "Trend: <color=#FF0000>Price < 200 EMA</color>\n" +
-                "Pivot Point: <color=#FF0000>At Resistance (R1)</color>\n\n" +
-                "ACTION: ?";
-            }
+            if (rsiText != null) rsiText.text = "<color=#00FF00>25.4 (OVERSOLD)</color>";
+            if (trendText != null) trendText.text = "<color=#00FFFF>PRICE > 200 EMA (BULLISH)</color>";
+            if (keyZoneText != null) keyZoneText.text = "<color=#FFD700>NEARING SUPPORT (S1)</color>";
+        }
+        else
+        {
+            if (rsiText != null) rsiText.text = "<color=#FF0000>75.2 (OVERBOUGHT)</color>";
+            if (trendText != null) trendText.text = "<color=#FF0000>PRICE < 200 EMA (BEARISH)</color>";
+            if (keyZoneText != null) keyZoneText.text = "<color=#FFD700>NEARING RESISTANCE (R1)</color>";
         }
     }
 
@@ -81,27 +86,34 @@ public class TradingChallenge : MonoBehaviour
         if (playerChoseBuy == isBuyScenario)
         {
             if (GameManager.Instance != null) GameManager.Instance.AddCorrectTrade();
-
             if (redLaserWall != null) redLaserWall.SetActive(false);
-
             if (SoundManager.Instance != null) SoundManager.Instance.PlaySFX(SoundManager.Instance.correctStrategySound);
-
             Debug.Log("STRATEGY CONFIRMED - Path Opened!");
         }
         else
         {
             if (fomo != null) fomo.PunishPlayer();
-
             if (redLaserWall != null) redLaserWall.SetActive(false);
-
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.currentSpeedMultiplier += 0.02f;
             }
-
             if (SoundManager.Instance != null) SoundManager.Instance.PlaySFX(SoundManager.Instance.wrongStrategySound);
-
             Debug.Log("WRONG STRATEGY - FOMO approaches! Game Speed Increased!");
+        }
+    }
+
+    public void ForceCancelChallenge()
+    {
+        if (!challengeActive) return;
+
+        challengeActive = false;
+        if (challengeUI != null) challengeUI.SetActive(false);
+        if (redLaserWall != null) redLaserWall.SetActive(false);
+
+        if (Time.timeScale == 0.2f)
+        {
+            Time.timeScale = 1f;
         }
     }
 }
