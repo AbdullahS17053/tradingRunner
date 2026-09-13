@@ -32,6 +32,7 @@ public class GameManager : MonoBehaviour
 
     private bool isGameOver = false;
     private bool gameStarted = false;
+    public bool isCaptureSequenceActive = false;
 
     private void Awake()
     {
@@ -66,7 +67,7 @@ public class GameManager : MonoBehaviour
 
     private void Update()
     {
-        if (isGameOver || !gameStarted) return;
+        if (isGameOver || !gameStarted || isCaptureSequenceActive) return;
 
         distanceRun += (10f * currentSpeedMultiplier) * Time.deltaTime;
         UpdateDistanceUI();
@@ -116,6 +117,8 @@ public class GameManager : MonoBehaviour
     {
         if (isGameOver) return;
         isGameOver = true;
+
+        SoundManager.Instance.StopMusic();
 
         Time.timeScale = 1.0f;
 

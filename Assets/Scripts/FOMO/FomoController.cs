@@ -34,12 +34,34 @@ public class FOMOController : MonoBehaviour
     public float captureToLaserDelay = 1.5f;
     public float laserFadeDuration = 0.2f;
 
+    [Header("Audio")]
+    public AudioSource fomoAudioSource;
+    public AudioClip ascendSound;
+    public AudioClip descendSound;
+    public AudioClip attackWindupSound;
+    public AudioClip laserShootSound;
+
     private float timeSinceLastMistake = 0f;
     private bool isCatching = false;
 
     private void Update()
     {
         if (player == null || isCatching) return;
+
+        // --- TESTING SHORTCUT (WILL NOT COMPILE IN FINAL BUILD) ---
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            Debug.Log("<color=yellow>[DEBUG] Manually triggered FOMO Capture!</color>");
+            currentDistanceBehind = 0f;
+        }
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            Debug.Log("<color=yellow>[DEBUG] Manually triggered FOMO Catch-Up!</color>");
+            PunishPlayer();
+        }
+#endif
+        // -----------------------------------------------------------
 
         timeSinceLastMistake += Time.deltaTime;
 
@@ -73,6 +95,11 @@ public class FOMOController : MonoBehaviour
     {
         isCatching = true;
 
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.isCaptureSequenceActive = true;
+        }
+
         if (RunnerController.Instance != null)
         {
             RunnerController.Instance.enabled = false;
@@ -83,6 +110,8 @@ public class FOMOController : MonoBehaviour
             playerAnimator.SetBool("IsCaptured", true);
             playerAnimator.Play("StandingIdle", 0, 0f);
         }
+
+        SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoAscendSound);
 
         Vector3 startPos = transform.position;
         Vector3 skyPos = startPos + (Vector3.up * ascendHeight);
@@ -98,6 +127,8 @@ public class FOMOController : MonoBehaviour
 
         Vector3 targetPos = player.position + (Vector3.forward * hoverForwardDistance) + (Vector3.up * hoverLevitationHeight);
         Vector3 dropPos = targetPos + (Vector3.up * dropHeight);
+
+        SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoDescendSound);
 
         transform.position = dropPos;
         elapsed = 0f;
@@ -115,13 +146,16 @@ public class FOMOController : MonoBehaviour
         transform.position = targetPos;
         transform.LookAt(player.position + (Vector3.up * 1f));
 
+        SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoOpenGunSound);
+
         if (fomoAnimator != null)
         {
             fomoAnimator.SetTrigger("Attack");
-            SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoLaserShotSound);
         }
 
         yield return new WaitForSeconds(captureToLaserDelay);
+
+        SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoLaserShotSound);
 
         if (fomoLaser != null && fomoLaserOrigin != null)
         {
@@ -159,6 +193,8 @@ public class FOMOController : MonoBehaviour
         }
 
         yield return new WaitForSeconds(1.5f - laserFadeDuration);
+
+        SoundManager.Instance.PlaySFX(SoundManager.Instance.gameOverSound);
 
         if (GameManager.Instance != null)
         {

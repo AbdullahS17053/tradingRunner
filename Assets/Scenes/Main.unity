@@ -1352,10 +1352,10 @@ MonoBehaviour:
   wrongStrategySound: {fileID: 8300000, guid: c0f30b0f3e0aba557b8daab0ca8d6836, type: 3}
   gameOverSound: {fileID: 8300000, guid: d6aa2559dd53196248a7c4d51b883034, type: 3}
   crashSound: {fileID: 8300000, guid: e7342034e19a29ce2907232d56c2b2d8, type: 3}
-  fomoLaserShotSound: {fileID: 8300000, guid: c235a9c87a2bb0b3bbbbb14743cee0df, type: 3}
-  fomoOpenGunSound: {fileID: 0}
-  fomoAscendSound: {fileID: 0}
-  fomoDescendSound: {fileID: 0}
+  fomoLaserShotSound: {fileID: 8300000, guid: d831dbb5689f3e22a85e33a0772da11f, type: 3}
+  fomoOpenGunSound: {fileID: 8300000, guid: e40c7f37b250bee45b360dd6f5c31a93, type: 3}
+  fomoAscendSound: {fileID: 8300000, guid: 74fbbd4c83bc94cab8668394e7924044, type: 3}
+  fomoDescendSound: {fileID: 8300000, guid: e378c3d5aa79ecfb6a6bc45386626605, type: 3}
 --- !u!4 &1105979735
 Transform:
   m_ObjectHideFlags: 0
@@ -2543,6 +2543,7 @@ MonoBehaviour:
   finalTradesText: {fileID: 1196818333}
   finalTPText: {fileID: 1630741820}
   highScoreText: {fileID: 893199883}
+  isCaptureSequenceActive: 0
 --- !u!4 &1475263685
 Transform:
   m_ObjectHideFlags: 0
@@ -4727,7 +4728,7 @@ PrefabInstance:
     - target: {fileID: 2725433035632138992, guid: 954387f4ad72e841ebb71de636668bf4,
         type: 3}
       propertyPath: laserFadeDuration
-      value: 0.2
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 2725433035632138992, guid: 954387f4ad72e841ebb71de636668bf4,
         type: 3}
