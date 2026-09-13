@@ -204,6 +204,11 @@ public class RunnerController : MonoBehaviour
         if (isDead) return;
         isDead = true;
 
+        if (CameraShake.Instance != null)
+        {
+            CameraShake.Instance.ShakeCamera(0.25f, 0.2f);
+        }
+
         SoundManager.Instance.StopMusic();
         SoundManager.Instance.PlaySFX(SoundManager.Instance.crashSound);
         SoundManager.Instance.PlaySFX(SoundManager.Instance.gameOverSound);

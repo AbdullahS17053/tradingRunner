@@ -174,6 +174,11 @@ public class FOMOController : MonoBehaviour
             playerAnimator.Play("Die", 0, 0f);
         }
 
+        if (CameraShake.Instance != null)
+        {
+            CameraShake.Instance.ShakeCamera(0.2f, 0.2f);
+        }
+
         float fadeElapsed = 0f;
         while (fadeElapsed < laserFadeDuration)
         {

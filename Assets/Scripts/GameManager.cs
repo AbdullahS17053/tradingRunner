@@ -113,6 +113,14 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void LoadScene(int sceneIndex)
+    {
+        if (LevelLoader.Instance != null)
+        {
+            LevelLoader.Instance.LoadScene(sceneIndex);
+        }
+    }
+
     public void TriggerGameOver()
     {
         if (isGameOver) return;
