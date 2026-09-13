@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,6 +9,7 @@ public class RunnerController : MonoBehaviour
 
     [Header("References")]
     public Animator animator;
+    public ParticleSystem deathParticles;
 
     [Header("Lane Settings")]
     public int numberOfLanes = 3;
@@ -33,6 +35,9 @@ public class RunnerController : MonoBehaviour
     private Vector3 originalCenter;
     private bool isSliding = false;
     private float slideTimer;
+
+    // Added flag to prevent input/movement after dying
+    private bool isDead = false;
 
     private void Awake()
     {
@@ -62,6 +67,9 @@ public class RunnerController : MonoBehaviour
 
     private void Update()
     {
+        // Stop all processing if the player is dead
+        if (isDead) return;
+
         HandleKeyboardInput();
         MovePlayer();
         UpdateAnimations();
@@ -80,7 +88,6 @@ public class RunnerController : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.DownArrow) || Input.GetKeyDown(KeyCode.S))
             TriggerSlide();
     }
-
 
     public void MoveLane(int direction)
     {
@@ -131,7 +138,6 @@ public class RunnerController : MonoBehaviour
             velocity.y = fastFallVelocity;
         }
     }
-
 
     private void HandleSlidingTimer()
     {
@@ -195,8 +201,25 @@ public class RunnerController : MonoBehaviour
 
     private void Die()
     {
+        if (isDead) return;
+        isDead = true;
+
         SoundManager.Instance.StopMusic();
         SoundManager.Instance.PlaySFX(SoundManager.Instance.crashSound);
-        GameManager.Instance.TriggerGameOver();
+        SoundManager.Instance.PlaySFX(SoundManager.Instance.gameOverSound);
+        if (deathParticles != null) deathParticles.Play();
+        if (animator != null) animator.SetTrigger("Die");
+
+        StartCoroutine(DeathRoutine());
+    }
+
+    private IEnumerator DeathRoutine()
+    {
+        yield return new WaitForSeconds(2.0f);
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.TriggerGameOver();
+        }
     }
 }

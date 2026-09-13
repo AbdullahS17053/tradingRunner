@@ -119,12 +119,6 @@ public class GameManager : MonoBehaviour
 
         Time.timeScale = 0f;
 
-        if (SoundManager.Instance != null)
-        {
-            SoundManager.Instance.StopMusic();
-            SoundManager.Instance.PlaySFX(SoundManager.Instance.gameOverSound);
-        }
-
         int currentTotalScore = Mathf.FloorToInt(distanceRun) + (correctTrades * 5) + (takeProfit * 10);
 
         int highScore = PlayerPrefs.GetInt("HighScore_Total", 0);

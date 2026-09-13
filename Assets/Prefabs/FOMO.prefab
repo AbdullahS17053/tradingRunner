@@ -2530,12 +2530,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 0}
+  playerAnimator: {fileID: 0}
   currentDistanceBehind: 4
   penaltyDistance: 1
   catchUpSpeed: 20
   maxDistanceBehind: 3.5
   recoveryDelay: 4
   recoveryRate: 0.5
+  fomoLaser: {fileID: 0}
+  fomoLaserOrigin: {fileID: 0}
+  ascendHeight: 15
+  ascendDuration: 1
+  dropHeight: 15
+  descendDuration: 1.5
+  hoverForwardDistance: 4
+  hoverLevitationHeight: 1
+  scaredToLaserDelay: 1.5
 --- !u!136 &7768187383697841965
 CapsuleCollider:
   m_ObjectHideFlags: 0
