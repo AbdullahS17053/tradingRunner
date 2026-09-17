@@ -5579,13 +5579,16 @@ MonoBehaviour:
     weight: 1
   - prefab: {fileID: 1190957966245304739, guid: 192ef4f4bac4ecc7cabdbac8b26a7a16,
       type: 3}
-    weight: 0.5
+    weight: 0.6
   - prefab: {fileID: 1190957966245304739, guid: 36474bc26d86d0fd9872faa4e8b3316d,
       type: 3}
-    weight: 1
+    weight: 0.7
   - prefab: {fileID: 1190957966245304739, guid: de957f1a39791b32aa4bf27185f8756b,
       type: 3}
     weight: 0.8
+  - prefab: {fileID: 1190957966245304739, guid: d33e38c96610f6e89b8d9244c51cbe02,
+      type: 3}
+    weight: 1
   concurrentChunks: 6
   despawnDistance: 150
 --- !u!114 &1196818333 stripped

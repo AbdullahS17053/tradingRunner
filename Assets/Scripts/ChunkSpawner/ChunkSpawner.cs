@@ -29,7 +29,6 @@ public class ChunkSpawner : MonoBehaviour
     private Transform currentConnectionPoint;
 
     private TrackChunk lastSpawnedPrefab;
-    private int consecutiveSpawnCount = 0;
 
     public void Start()
     {
@@ -86,11 +85,11 @@ public class ChunkSpawner : MonoBehaviour
         {
             chunk.pool = new ObjectPool<TrackChunk>(
                 createFunc: () => Instantiate(chunk.prefab, transform),
-                actionOnGet: (obj) => obj.gameObject.SetActive(true),
-                actionOnRelease: (obj) => obj.gameObject.SetActive(false),
-                actionOnDestroy: (obj) => Destroy(obj.gameObject),
-                defaultCapacity: concurrentChunks,
-                maxSize: concurrentChunks * 2
+                                                    actionOnGet: (obj) => obj.gameObject.SetActive(true),
+                                                    actionOnRelease: (obj) => obj.gameObject.SetActive(false),
+                                                    actionOnDestroy: (obj) => Destroy(obj.gameObject),
+                                                    defaultCapacity: concurrentChunks,
+                                                        maxSize: concurrentChunks * 2
             );
         }
     }
@@ -104,7 +103,7 @@ public class ChunkSpawner : MonoBehaviour
 
         foreach (var chunk in availableChunks)
         {
-            if (availableChunks.Count > 1 && consecutiveSpawnCount >= 2 && chunk.prefab == lastSpawnedPrefab)
+            if (availableChunks.Count > 1 && chunk.prefab == lastSpawnedPrefab)
             {
                 continue;
             }
@@ -127,15 +126,7 @@ public class ChunkSpawner : MonoBehaviour
             }
         }
 
-        if (selectedChunk.prefab == lastSpawnedPrefab)
-        {
-            consecutiveSpawnCount++;
-        }
-        else
-        {
-            lastSpawnedPrefab = selectedChunk.prefab;
-            consecutiveSpawnCount = 1;
-        }
+        lastSpawnedPrefab = selectedChunk.prefab;
 
         SpawnChunk(selectedChunk.prefab, selectedChunk.pool);
     }
