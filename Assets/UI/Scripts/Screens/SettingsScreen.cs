@@ -66,12 +66,20 @@ namespace SciFiUI.Screens
         {
             UpdateMusicPercent(val);
             PlayerPrefs.SetFloat("Settings_Music", val);
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.SetMusicVolume(val);
+            }
         }
 
         private void OnSfxChanged(float val)
         {
             UpdateSfxPercent(val);
             PlayerPrefs.SetFloat("Settings_SFX", val);
+            if (SoundManager.Instance != null)
+            {
+                SoundManager.Instance.SetSFXVolume(val);
+            }
         }
 
         private void UpdateMusicPercent(float val)

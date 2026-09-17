@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour
 
     [Header("Player Reference")]
     public Animator playerAnimator;
+    public Animator gameoverAnimator;
 
     [Header("Stats")]
     public int takeProfit = 0;
@@ -30,9 +31,10 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI finalTPText;
     public TextMeshProUGUI highScoreText;
 
-    private bool isGameOver = false;
+    public bool isGameOver = false;
     private bool gameStarted = false;
     public bool isCaptureSequenceActive = false;
+    public bool isTradingChallengeActive = false;
 
     private void Awake()
     {
@@ -121,10 +123,22 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void FreezeGame()
+    {
+        Time.timeScale = 0f;
+    }
+
+    public void UnfreezeGame()
+    {
+        Time.timeScale = 1.0f;
+    }
+
     public void TriggerGameOver()
     {
-        if (isGameOver) return;
-        isGameOver = true;
+        if (RunnerController.Instance != null)
+        {
+            RunnerController.Instance.enabled = false;
+        }
 
         SoundManager.Instance.StopMusic();
 
@@ -149,6 +163,7 @@ public class GameManager : MonoBehaviour
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
+            gameoverAnimator.Play("Game Over Panel Enter");
         }
 
         if (finalDistanceText != null) finalDistanceText.text = $"{Mathf.FloorToInt(distanceRun)}m";

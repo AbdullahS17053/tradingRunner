@@ -12,6 +12,16 @@ public class SwipeController : MonoBehaviour
 
     private void Update()
     {
+        if (GameManager.Instance != null && GameManager.Instance.isGameOver || GameManager.Instance.isTradingChallengeActive)
+        {
+            return;
+        }
+
+        if (Time.timeScale == 0f || (RunnerController.Instance != null && !RunnerController.Instance.enabled))
+        {
+            return;
+        }
+
         if (Input.touchCount > 0)
         {
             Touch touch = Input.GetTouch(0);
@@ -19,7 +29,7 @@ public class SwipeController : MonoBehaviour
             if (touch.phase == TouchPhase.Began)
             {
                 touchStartPos = touch.position;
-                hasSwiped = false; // Unlock on new touch
+                hasSwiped = false;
             }
             else if (touch.phase == TouchPhase.Moved && !hasSwiped)
             {
@@ -35,7 +45,7 @@ public class SwipeController : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             touchStartPos = Input.mousePosition;
-            hasSwiped = false; // Unlock on new click
+            hasSwiped = false;
         }
         else if (Input.GetMouseButton(0) && !hasSwiped)
         {

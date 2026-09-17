@@ -67,7 +67,6 @@ public class RunnerController : MonoBehaviour
 
     private void Update()
     {
-        // Stop all processing if the player is dead
         if (isDead) return;
 
         HandleKeyboardInput();
@@ -78,6 +77,8 @@ public class RunnerController : MonoBehaviour
 
     private void HandleKeyboardInput()
     {
+        if (GameManager.Instance.isTradingChallengeActive) return;
+
         if (Input.GetKeyDown(KeyCode.LeftArrow) || Input.GetKeyDown(KeyCode.A))
             MoveLane(-1);
         else if (Input.GetKeyDown(KeyCode.RightArrow) || Input.GetKeyDown(KeyCode.D))
@@ -222,6 +223,7 @@ public class RunnerController : MonoBehaviour
         if (deathParticles != null) deathParticles.Play();
         if (animator != null) animator.SetTrigger("Die");
 
+        GameManager.Instance.isGameOver = true;
         StartCoroutine(DeathRoutine());
     }
 

@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class TradingChallenge : MonoBehaviour
 {
@@ -15,18 +16,35 @@ public class TradingChallenge : MonoBehaviour
     private bool challengeActive = false;
     private bool isBuyScenario;
     private FOMOController fomo;
+    private Animator uiAnimator;
+    private bool isClosing = false;
 
     private void Start()
     {
         fomo = FindObjectOfType<FOMOController>();
+        InitAnimator();
         if (challengeUI != null) challengeUI.SetActive(false);
     }
 
     private void OnEnable()
     {
         challengeActive = false;
+        GameManager.Instance.isTradingChallengeActive = false;
+        isClosing = false;
         if (challengeUI != null) challengeUI.SetActive(false);
         if (redLaserWall != null) redLaserWall.SetActive(true);
+    }
+
+    private void InitAnimator()
+    {
+        if (uiAnimator == null && challengeUI != null)
+        {
+            uiAnimator = challengeUI.GetComponent<Animator>();
+            if (uiAnimator == null)
+            {
+                uiAnimator = challengeUI.GetComponentInChildren<Animator>();
+            }
+        }
     }
 
     private void Update()
@@ -39,7 +57,7 @@ public class TradingChallenge : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player") && !challengeActive)
+        if (other.CompareTag("Player") && !challengeActive && !isClosing)
         {
             StartChallenge();
         }
@@ -48,8 +66,22 @@ public class TradingChallenge : MonoBehaviour
     private void StartChallenge()
     {
         challengeActive = true;
+        GameManager.Instance.isTradingChallengeActive = true;
+        isClosing = false;
         Time.timeScale = 0.2f;
-        if (challengeUI != null) challengeUI.SetActive(true);
+        if (challengeUI != null)
+        {
+            challengeUI.SetActive(true);
+            InitAnimator();
+            if (uiAnimator != null)
+            {
+                uiAnimator.enabled = true;
+                uiAnimator.speed = 1f;
+                uiAnimator.Rebind();
+                uiAnimator.Update(0f);
+                uiAnimator.Play("TradingMenuOpen", 0, 0f);
+            }
+        }
 
         isBuyScenario = Random.value > 0.5f;
 
@@ -79,8 +111,12 @@ public class TradingChallenge : MonoBehaviour
 
     public void ResolveChallenge(bool playerChoseBuy)
     {
+        if (!challengeActive || isClosing) return;
+
         challengeActive = false;
-        if (challengeUI != null) challengeUI.SetActive(false);
+        GameManager.Instance.isTradingChallengeActive = false;
+        isClosing = true;
+
         Time.timeScale = 1f;
 
         if (playerChoseBuy == isBuyScenario)
@@ -101,13 +137,55 @@ public class TradingChallenge : MonoBehaviour
             if (SoundManager.Instance != null) SoundManager.Instance.PlaySFX(SoundManager.Instance.wrongStrategySound);
             Debug.Log("WRONG STRATEGY - FOMO approaches! Game Speed Increased!");
         }
+
+        StartCoroutine(AnimateAndCloseMenu());
+    }
+
+    private IEnumerator AnimateAndCloseMenu()
+    {
+        InitAnimator();
+
+        if (uiAnimator != null)
+        {
+            uiAnimator.enabled = true;
+            uiAnimator.speed = 1f;
+            uiAnimator.ResetTrigger("CloseRequested");
+            uiAnimator.SetTrigger("CloseRequested");
+            uiAnimator.Play("TradingMenuClose", 0, 0f);
+
+            yield return null;
+
+            float closeAnimDuration = 0.41666666f;
+            AnimatorStateInfo stateInfo = uiAnimator.GetCurrentAnimatorStateInfo(0);
+            if (stateInfo.IsName("TradingMenuClose") && stateInfo.length > 0f)
+            {
+                closeAnimDuration = stateInfo.length;
+            }
+
+            float elapsed = 0f;
+            while (elapsed < closeAnimDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+
+        if (challengeUI != null)
+        {
+            challengeUI.SetActive(false);
+        }
+        isClosing = false;
     }
 
     public void ForceCancelChallenge()
     {
-        if (!challengeActive) return;
+        if (!challengeActive && !isClosing) return;
 
+        StopAllCoroutines();
         challengeActive = false;
+        GameManager.Instance.isTradingChallengeActive = false;
+        isClosing = false;
+
         if (challengeUI != null) challengeUI.SetActive(false);
         if (redLaserWall != null) redLaserWall.SetActive(false);
 
