@@ -26,10 +26,19 @@ public class RunnerController : MonoBehaviour
     [Tooltip("How fast the character slams down when sliding mid-air")]
     public float fastFallVelocity = -20f;
 
+    [Header("Labyrinth Level Settings")]
+    [Tooltip("Enable 90-degree directional turning ONLY for Labyrinth World")]
+    public bool enableLabyrinthTurns = false;
+
     private CharacterController controller;
     private int currentLane;
     private Vector3 velocity;
     private float targetXPosition;
+    private Vector3 pathOrigin;
+    private Quaternion pathRotation = Quaternion.identity;
+    private float groundedGraceTimer = 0f;
+
+    public Vector3 PathForward => pathRotation * Vector3.forward;
 
     private float originalHeight;
     private Vector3 originalCenter;
@@ -38,6 +47,8 @@ public class RunnerController : MonoBehaviour
 
     // Added flag to prevent input/movement after dying
     private bool isDead = false;
+
+    private bool IsPlayerGrounded => controller.isGrounded || groundedGraceTimer > 0f;
 
     private void Awake()
     {
@@ -57,6 +68,9 @@ public class RunnerController : MonoBehaviour
 
         if (animator == null) animator = GetComponentInChildren<Animator>();
 
+        pathOrigin = new Vector3(0f, transform.position.y, transform.position.z);
+        pathRotation = transform.rotation;
+
         currentLane = numberOfLanes / 2;
         targetXPosition = GetLaneXPosition(currentLane);
 
@@ -68,6 +82,11 @@ public class RunnerController : MonoBehaviour
     private void Update()
     {
         if (isDead) return;
+
+        if (controller.isGrounded)
+            groundedGraceTimer = 0.12f;
+        else if (groundedGraceTimer > 0f)
+            groundedGraceTimer -= Time.deltaTime;
 
         HandleKeyboardInput();
         MovePlayer();
@@ -96,7 +115,7 @@ public class RunnerController : MonoBehaviour
 
         if (desiredLane != currentLane)
         {
-            if (controller.isGrounded && !isSliding)
+            if (IsPlayerGrounded && !isSliding)
             {
                 if (desiredLane < currentLane)
                     animator.SetTrigger("DodgeLeft");
@@ -111,10 +130,11 @@ public class RunnerController : MonoBehaviour
 
     public void TriggerJump()
     {
-        if (controller.isGrounded)
+        if (IsPlayerGrounded)
         {
             if (isSliding) StopSliding();
 
+            groundedGraceTimer = 0f;
             velocity.y = jumpForce;
             animator.ResetTrigger("Slide");
             animator.SetTrigger("Jump");
@@ -123,7 +143,7 @@ public class RunnerController : MonoBehaviour
 
     public void TriggerSlide()
     {
-        if (controller.isGrounded)
+        if (IsPlayerGrounded)
         {
             isSliding = true;
             slideTimer = slideDuration;
@@ -169,20 +189,57 @@ public class RunnerController : MonoBehaviour
         float currentSpeedMultiplier = GameManager.Instance != null ? GameManager.Instance.currentSpeedMultiplier : 1f;
         float currentForwardSpeed = forwardSpeed * currentSpeedMultiplier;
 
-        Vector3 moveVector = new Vector3(0, velocity.y, currentForwardSpeed) * Time.deltaTime;
+        if (!enableLabyrinthTurns)
+        {
+            float newX = Mathf.Lerp(transform.position.x, targetXPosition, laneSwitchSpeed * Time.deltaTime);
+            float moveX = newX - transform.position.x;
 
-        float currentX = transform.position.x;
-        float moveX = Mathf.Lerp(currentX, targetXPosition, laneSwitchSpeed * Time.deltaTime) - currentX;
-        moveVector.x = moveX;
+            Vector3 linearMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
+            controller.Move(linearMoveVector);
+            return;
+        }
+
+        // Rotate BEFORE controller.Move so CharacterController.isGrounded is never invalidated after Move()
+        if (Quaternion.Angle(transform.rotation, pathRotation) > 0.1f)
+        {
+            transform.rotation = Quaternion.Slerp(transform.rotation, pathRotation, 16f * Time.deltaTime);
+        }
+        else if (transform.rotation != pathRotation)
+        {
+            transform.rotation = pathRotation;
+        }
+
+        Vector3 forwardDir = pathRotation * Vector3.forward;
+        Vector3 rightDir = pathRotation * Vector3.right;
+
+        float currentLateral = Vector3.Dot(transform.position - pathOrigin, rightDir);
+        float moveLateral = Mathf.Lerp(currentLateral, targetXPosition, laneSwitchSpeed * Time.deltaTime) - currentLateral;
+
+        Vector3 moveVector = (forwardDir * (currentForwardSpeed * Time.deltaTime))
+                           + (rightDir * moveLateral)
+                           + (Vector3.up * (velocity.y * Time.deltaTime));
 
         controller.Move(moveVector);
+        if (controller.isGrounded)
+            groundedGraceTimer = 0.12f;
+    }
+
+    public void ExecuteCornerTurn(Vector3 newOrigin, Quaternion newRotation, float turnAngle)
+    {
+        if (!enableLabyrinthTurns) return;
+
+        pathOrigin = new Vector3(newOrigin.x, transform.position.y, newOrigin.z);
+        pathRotation = newRotation;
+
+        currentLane = numberOfLanes / 2;
+        targetXPosition = GetLaneXPosition(currentLane);
     }
 
     private void UpdateAnimations()
     {
         if (animator != null)
         {
-            animator.SetBool("Grounded", controller.isGrounded);
+            animator.SetBool("Grounded", IsPlayerGrounded);
         }
     }
 

@@ -71,10 +71,18 @@ public class FOMOController : MonoBehaviour
             currentDistanceBehind = Mathf.Min(currentDistanceBehind, maxDistanceBehind);
         }
 
-        Vector3 targetPosition = player.position;
-        targetPosition.z -= currentDistanceBehind;
-
-        transform.position = Vector3.Lerp(transform.position, targetPosition, catchUpSpeed * Time.deltaTime);
+        if (RunnerController.Instance != null && RunnerController.Instance.enableLabyrinthTurns)
+        {
+            Vector3 targetPosition = player.position - (player.forward * currentDistanceBehind);
+            targetPosition.y = transform.position.y;
+            transform.position = Vector3.Lerp(transform.position, targetPosition, catchUpSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, player.rotation, catchUpSpeed * Time.deltaTime);
+        }
+        else
+        {
+            Vector3 targetPosition = new Vector3(player.position.x, transform.position.y, player.position.z - currentDistanceBehind);
+            transform.position = Vector3.Lerp(transform.position, targetPosition, catchUpSpeed * Time.deltaTime);
+        }
 
         if (currentDistanceBehind <= 0.8f)
         {
@@ -125,7 +133,7 @@ public class FOMOController : MonoBehaviour
             yield return null;
         }
 
-        Vector3 targetPos = player.position + (Vector3.forward * hoverForwardDistance) + (Vector3.up * hoverLevitationHeight);
+        Vector3 targetPos = player.position + (player.forward * hoverForwardDistance) + (Vector3.up * hoverLevitationHeight);
         Vector3 dropPos = targetPos + (Vector3.up * dropHeight);
 
         SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoDescendSound);

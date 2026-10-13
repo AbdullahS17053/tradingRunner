@@ -25,10 +25,15 @@ public class ChunkSpawner : MonoBehaviour
     public int concurrentChunks = 5;
     public float despawnDistance = 30f;
 
+    [Header("Labyrinth Level Settings")]
+    [Tooltip("Enable 90-degree directional chunk loop ONLY for Labyrinth World")]
+    public bool enableLabyrinthTurns = false;
+
     private Queue<TrackChunk> activeChunks = new Queue<TrackChunk>();
     private Transform currentConnectionPoint;
 
     private TrackChunk lastSpawnedPrefab;
+    private float currentNetHeading = 0f;
 
     public void Start()
     {
@@ -37,9 +42,18 @@ public class ChunkSpawner : MonoBehaviour
         GameObject startPoint = new GameObject("StartPoint");
         startPoint.transform.position = transform.position;
         currentConnectionPoint = startPoint.transform;
+        currentNetHeading = 0f;
 
         if (startChunkPrefab != null)
         {
+            if (enableLabyrinthTurns)
+            {
+                lastSpawnedPrefab = startChunkPrefab;
+                if (startChunkPrefab.connectionPoint != null)
+                {
+                    currentNetHeading += Mathf.DeltaAngle(0f, startChunkPrefab.connectionPoint.localEulerAngles.y);
+                }
+            }
             SpawnChunk(startChunkPrefab, null);
         }
 
@@ -55,7 +69,20 @@ public class ChunkSpawner : MonoBehaviour
 
         TrackChunk oldestChunk = activeChunks.Peek();
 
-        if (player.position.z - oldestChunk.transform.position.z > despawnDistance)
+        bool shouldDespawn;
+        if (!enableLabyrinthTurns)
+        {
+            shouldDespawn = (player.position.z - oldestChunk.transform.position.z) > despawnDistance;
+        }
+        else
+        {
+            Vector3 exitPos = oldestChunk.connectionPoint != null ? oldestChunk.connectionPoint.position : oldestChunk.transform.position;
+            Vector3 exitForward = oldestChunk.connectionPoint != null ? oldestChunk.connectionPoint.forward : oldestChunk.transform.forward;
+            float distPastExit = Vector3.Dot(player.position - exitPos, exitForward);
+            shouldDespawn = distPastExit > 14f;
+        }
+
+        if (shouldDespawn)
         {
             bool returnedToPool = false;
 
@@ -98,6 +125,10 @@ public class ChunkSpawner : MonoBehaviour
     {
         if (availableChunks.Count == 0) return;
 
+        float lastTurn = (lastSpawnedPrefab != null && lastSpawnedPrefab.connectionPoint != null)
+            ? Mathf.DeltaAngle(0f, lastSpawnedPrefab.connectionPoint.localEulerAngles.y)
+            : 0f;
+
         float currentTotalWeight = 0f;
         List<WeightedChunk> validChunks = new List<WeightedChunk>();
 
@@ -108,8 +139,44 @@ public class ChunkSpawner : MonoBehaviour
                 continue;
             }
 
+            if (enableLabyrinthTurns && chunk.prefab.connectionPoint != null)
+            {
+                float chunkTurn = Mathf.DeltaAngle(0f, chunk.prefab.connectionPoint.localEulerAngles.y);
+
+                if (currentNetHeading < -45f)
+                {
+                    // Currently moving Left (-90): next chunk must turn Right (+90) to return to forward heading
+                    if (chunkTurn <= 10f) continue;
+                }
+                else if (currentNetHeading > 45f)
+                {
+                    // Currently moving Right (+90): next chunk must turn Left (-90) to return to forward heading
+                    if (chunkTurn >= -10f) continue;
+                }
+                else
+                {
+                    // Currently moving Forward (0): alternate between Linear chunks and Turn chunks
+                    if (Mathf.Abs(lastTurn) > 10f)
+                    {
+                        // Just finished a Left/Right turn pair -> spawn a Linear chunk next
+                        if (Mathf.Abs(chunkTurn) > 10f) continue;
+                    }
+                    else
+                    {
+                        // Just finished a Linear chunk -> spawn a Left or Right turn chunk next
+                        if (Mathf.Abs(chunkTurn) <= 10f) continue;
+                    }
+                }
+            }
+
             validChunks.Add(chunk);
             currentTotalWeight += chunk.weight;
+        }
+
+        if (validChunks.Count == 0)
+        {
+            validChunks.Add(availableChunks[0]);
+            currentTotalWeight = availableChunks[0].weight;
         }
 
         float randomValue = Random.Range(0, currentTotalWeight);
@@ -127,6 +194,10 @@ public class ChunkSpawner : MonoBehaviour
         }
 
         lastSpawnedPrefab = selectedChunk.prefab;
+        if (selectedChunk.prefab.connectionPoint != null)
+        {
+            currentNetHeading += Mathf.DeltaAngle(0f, selectedChunk.prefab.connectionPoint.localEulerAngles.y);
+        }
 
         SpawnChunk(selectedChunk.prefab, selectedChunk.pool);
     }
