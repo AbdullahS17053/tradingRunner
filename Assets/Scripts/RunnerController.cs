@@ -109,13 +109,19 @@ public class RunnerController : MonoBehaviour
             TriggerSlide();
     }
 
+    public bool IsSliding => isSliding;
+    public int CurrentLane => currentLane;
+    public float TargetXPosition => targetXPosition;
+    public float VerticalVelocity => velocity.y;
+    public bool IsDead => isDead;
+
     public void MoveLane(int direction)
     {
         int desiredLane = Mathf.Clamp(currentLane + direction, 0, numberOfLanes - 1);
 
         if (desiredLane != currentLane)
         {
-            if (IsPlayerGrounded && !isSliding)
+            if (IsPlayerGrounded && !isSliding && animator != null)
             {
                 if (desiredLane < currentLane)
                     animator.SetTrigger("DodgeLeft");
@@ -136,8 +142,11 @@ public class RunnerController : MonoBehaviour
 
             groundedGraceTimer = 0f;
             velocity.y = jumpForce;
-            animator.ResetTrigger("Slide");
-            animator.SetTrigger("Jump");
+            if (animator != null)
+            {
+                animator.ResetTrigger("Slide");
+                animator.SetTrigger("Jump");
+            }
         }
     }
 
@@ -151,8 +160,11 @@ public class RunnerController : MonoBehaviour
             controller.height = originalHeight / 2f;
             controller.center = new Vector3(originalCenter.x, originalCenter.y / 2f, originalCenter.z);
 
-            animator.ResetTrigger("Jump");
-            animator.SetTrigger("Slide");
+            if (animator != null)
+            {
+                animator.ResetTrigger("Jump");
+                animator.SetTrigger("Slide");
+            }
         }
         else
         {
