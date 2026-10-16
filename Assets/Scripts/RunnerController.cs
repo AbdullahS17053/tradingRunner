@@ -62,6 +62,8 @@ public class RunnerController : MonoBehaviour
 
     private void Start()
     {
+        initialScale = transform.localScale;
+        transform.localScale = initialScale;
         controller = GetComponent<CharacterController>();
         originalHeight = controller.height;
         originalCenter = controller.center;
@@ -91,7 +93,7 @@ public class RunnerController : MonoBehaviour
 
     private void Update()
     {
-        if (isDead) return;
+        if (isDead || isWarping) return;
 
         if (controller.isGrounded)
             groundedGraceTimer = 0.12f;
@@ -174,6 +176,53 @@ public class RunnerController : MonoBehaviour
     public float TargetXPosition => targetXPosition;
     public float VerticalVelocity => velocity.y;
     public bool IsDead => isDead;
+    public bool IsWarping => isWarping;
+
+    private bool isWarping = false;
+    private Vector3 initialScale = Vector3.one;
+
+    public void FreezeForWarp()
+    {
+        isWarping = true;
+        velocity = Vector3.zero;
+        if (animator != null)
+        {
+            animator.speed = 0f;
+        }
+    }
+
+    public void AnimateWarpIntoPortal(Vector3 portalCenter, float duration)
+    {
+        FreezeForWarp();
+        StartCoroutine(WarpAnimationRoutine(portalCenter, duration));
+    }
+
+    private IEnumerator WarpAnimationRoutine(Vector3 portalCenter, float duration)
+    {
+        Vector3 startPos = transform.position;
+        Vector3 startScale = transform.localScale;
+        // Target is directly into the portal aperture
+        Vector3 targetPos = portalCenter;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+
+            // Ease in cubic for smooth pull into the vortex
+            float tMove = t * t;
+            transform.position = Vector3.Lerp(startPos, targetPos, tMove);
+
+            // Scale down smoothly towards zero
+            float tScale = Mathf.SmoothStep(0f, 1f, t);
+            transform.localScale = Vector3.Lerp(startScale, Vector3.zero, tScale);
+
+            yield return null;
+        }
+
+        transform.localScale = Vector3.zero;
+    }
 
     private LabyrinthTurnZone currentTurnZone;
 
@@ -348,6 +397,8 @@ public class RunnerController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (isWarping || isDead) return;
+
         if (other.CompareTag("Obstacle"))
         {
             if (PowerUpManager.Instance != null)

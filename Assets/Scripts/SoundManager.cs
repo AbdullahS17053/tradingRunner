@@ -45,7 +45,34 @@ public class SoundManager : MonoBehaviour
         LoadVolumeSettings();
     }
 
+    private void OnEnable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+    {
+        // Whenever a gameplay scene is loaded (or reloaded on restart), ensure background music plays
+        if (scene.buildIndex != 1) // 1 = MainMenu
+        {
+            if (musicSource != null && (!musicSource.isPlaying || musicSource.clip == null))
+            {
+                PlayMusic(cyberpunkBGM);
+            }
+        }
+    }
+
     private void Start()
+    {
+        PlayMusic(cyberpunkBGM);
+    }
+
+    public void RestartMusic()
     {
         PlayMusic(cyberpunkBGM);
     }

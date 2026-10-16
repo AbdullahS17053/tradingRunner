@@ -19,21 +19,44 @@ public class PortalTrigger : MonoBehaviour
         if (other.CompareTag("Player"))
         {
             isTriggered = true;
-            if (PowerUpHUD.Instance != null)
-            {
-                PowerUpHUD.Instance.ShowPortalAnnouncement("WARPING TO NEXT WORLD...");
-            }
             TriggerWorldTransition();
         }
     }
 
     public void TriggerWorldTransition()
     {
+        // 1. Calculate portal aperture center and animate the player pulling into it and shrinking
+        Vector3 portalCenter = transform.position;
+        Collider col = GetComponent<Collider>();
+        if (col != null)
+        {
+            portalCenter = col.bounds.center;
+        }
+
+        float warpAnimDuration = 0.9f;
+        if (LevelLoader.Instance != null && LevelLoader.Instance.transitionTime > 0.1f)
+        {
+            warpAnimDuration = LevelLoader.Instance.transitionTime * 0.9f;
+        }
+
+        if (RunnerController.Instance != null)
+        {
+            RunnerController.Instance.AnimateWarpIntoPortal(portalCenter, warpAnimDuration);
+        }
+
+        // Freeze horizontal world bend changes during the warp animation
+        WorldBendController bendCtrl = FindFirstObjectByType<WorldBendController>();
+        if (bendCtrl != null)
+        {
+            bendCtrl.randomizeHorizontal = false;
+        }
+
         if (PowerUpHUD.Instance != null)
         {
             PowerUpHUD.Instance.ShowPortalAnnouncement("WARPING TO NEXT WORLD...");
         }
-        // 1. Preserve run stats across world teleportation
+
+        // 2. Preserve run stats across world teleportation
         if (GameManager.Instance != null)
         {
             GameManager.isLoopingRun = true;
@@ -43,30 +66,33 @@ public class PortalTrigger : MonoBehaviour
             GameManager.carryOverSpeedMultiplier = GameManager.Instance.currentSpeedMultiplier;
         }
 
-        // 2. Play transition SFX
+        // 3. Play transition SFX
         if (SoundManager.Instance != null && SoundManager.Instance.correctStrategySound != null)
         {
             SoundManager.Instance.PlaySFX(SoundManager.Instance.correctStrategySound);
         }
 
-        // 3. Determine next scene in cyclic loop
+        // 4. Randomly select next world (excluding current world)
         int nextScene = targetSceneIndex;
         if (nextScene < 0)
         {
             string currentSceneName = SceneManager.GetActiveScene().name;
             int currentIndex = SceneManager.GetActiveScene().buildIndex;
 
-            if (currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase) || currentIndex == 0)
+            // Known build indices: 0 = Main (Cyberpunk), 2 = space world, 3 = Labyrinth World
+            System.Collections.Generic.List<int> candidateScenes = new System.Collections.Generic.List<int>();
+
+            bool isCyberpunk = currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase) || currentIndex == 0;
+            bool isSpace = currentSceneName.IndexOf("space", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 2;
+            bool isLabyrinth = currentSceneName.IndexOf("Labyrinth", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 3;
+
+            if (!isCyberpunk) candidateScenes.Add(0); // Main
+            if (!isSpace) candidateScenes.Add(2);     // space world
+            if (!isLabyrinth) candidateScenes.Add(3); // Labyrinth World
+
+            if (candidateScenes.Count > 0)
             {
-                nextScene = 2; // space world
-            }
-            else if (currentSceneName.IndexOf("space", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 2)
-            {
-                nextScene = 3; // Labyrinth World
-            }
-            else if (currentSceneName.IndexOf("Labyrinth", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 3)
-            {
-                nextScene = 0; // Main Cyberpunk City
+                nextScene = candidateScenes[Random.Range(0, candidateScenes.Count)];
             }
             else
             {
@@ -74,7 +100,7 @@ public class PortalTrigger : MonoBehaviour
             }
         }
 
-        // 4. Smooth load through LevelLoader
+        // 5. Smooth load through LevelLoader (fades to black then loads scene)
         if (LevelLoader.Instance != null)
         {
             LevelLoader.Instance.LoadScene(nextScene);

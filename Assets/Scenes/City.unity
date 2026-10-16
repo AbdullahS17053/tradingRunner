@@ -5750,6 +5750,8 @@ MonoBehaviour:
   initialChunkGracePeriod: 1
   enablePortalSpawning: 1
   portalInterval: 14
+  portalChunkPrefab: {fileID: 1190957966245304739, guid: 67d2484ac74b4757f8c62b19d3b7a981,
+    type: 3}
   shieldPowerUpPrefab: {fileID: 6001332939560133285, guid: c269ee3ce0f10d348baf271b380ab289,
     type: 3}
   speedBoostPowerUpPrefab: {fileID: 6588334547211602384, guid: 934e0d03b40039c43bfbf3a9813c3d50,

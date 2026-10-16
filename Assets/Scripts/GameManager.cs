@@ -87,6 +87,11 @@ public class GameManager : MonoBehaviour
             {
                 playerAnimator.SetBool("GameStarted", true);
             }
+
+            if (SoundManager.Instance != null && (SoundManager.Instance.musicSource == null || !SoundManager.Instance.musicSource.isPlaying))
+            {
+                SoundManager.Instance.RestartMusic();
+            }
         }
     }
 

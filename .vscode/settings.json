@@ -1,12 +1,12 @@
 {
     "dotnet.defaultSolution": "tradingRunner.sln",
-    "dotnet.dotnetPath": "C:/Program Files/dotnet/dotnet.exe",
-    "dotrush.roslyn.dotnetSdkDirectory": "C:/Program Files/dotnet/sdk/9.0.303",
+    "dotnet.dotnetPath": "/usr/bin/dotnet",
+    "dotrush.roslyn.dotnetSdkDirectory": "/usr/share/dotnet/sdk/10.0.111",
     "dotrush.msbuildProperties": {
         "DefineConstants": "UNITY_EDITOR"
     },
     "dotrush.roslyn.projectOrSolutionFiles": [
-        "C:/Work/Projects/tradingRunner/tradingRunner.sln"
+        "/mnt/Work/Development/Other Projects/Unity/tradingRunner/tradingRunner.sln"
     ],
     "dotrush.roslyn.restoreProjectsBeforeLoading": false,
     "files.exclude": {

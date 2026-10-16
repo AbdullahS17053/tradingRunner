@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.006818723, g: 0.004356999, b: 0.016058203, a: 1}
+  m_IndirectSpecularColor: {r: 0.005987256, g: 0.0037847296, b: 0.014264495, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -13333,6 +13333,8 @@ MonoBehaviour:
   initialChunkGracePeriod: 1
   enablePortalSpawning: 1
   portalInterval: 14
+  portalChunkPrefab: {fileID: 833579557855476302, guid: 03a7004f70a4af711bb914f7cb55c836,
+    type: 3}
   shieldPowerUpPrefab: {fileID: 6001332939560133285, guid: c269ee3ce0f10d348baf271b380ab289,
     type: 3}
   speedBoostPowerUpPrefab: {fileID: 6588334547211602384, guid: 934e0d03b40039c43bfbf3a9813c3d50,

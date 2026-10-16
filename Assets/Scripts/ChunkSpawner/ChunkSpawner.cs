@@ -35,6 +35,7 @@ public class ChunkSpawner : MonoBehaviour
     public int initialChunkGracePeriod = 1;
     public bool enablePortalSpawning = true;
     public int portalInterval = 14;
+    public TrackChunk portalChunkPrefab;
 
     [Header("Two Active Power-Ups")]
     public GameObject shieldPowerUpPrefab;
@@ -43,6 +44,7 @@ public class ChunkSpawner : MonoBehaviour
     private int totalSpawnedChunks = 0;
     private int nextPowerUpTypeIndex = 0;
     private float powerUpTimer = 4.0f;
+    private ObjectPool<TrackChunk> portalChunkPool;
 
     private Queue<TrackChunk> activeChunks = new Queue<TrackChunk>();
     private Transform currentConnectionPoint;
@@ -108,13 +110,21 @@ public class ChunkSpawner : MonoBehaviour
         {
             bool returnedToPool = false;
 
-            foreach (var chunkConfig in availableChunks)
+            if (portalChunkPrefab != null && portalChunkPool != null && oldestChunk.name.StartsWith(portalChunkPrefab.name))
             {
-                if (oldestChunk.name.StartsWith(chunkConfig.prefab.name))
+                portalChunkPool.Release(activeChunks.Dequeue());
+                returnedToPool = true;
+            }
+            else
+            {
+                foreach (var chunkConfig in availableChunks)
                 {
-                    chunkConfig.pool.Release(activeChunks.Dequeue());
-                    returnedToPool = true;
-                    break;
+                    if (oldestChunk.name.StartsWith(chunkConfig.prefab.name))
+                    {
+                        chunkConfig.pool.Release(activeChunks.Dequeue());
+                        returnedToPool = true;
+                        break;
+                    }
                 }
             }
 
@@ -134,17 +144,40 @@ public class ChunkSpawner : MonoBehaviour
         {
             chunk.pool = new ObjectPool<TrackChunk>(
                 createFunc: () => Instantiate(chunk.prefab, transform),
-                                                    actionOnGet: (obj) => obj.gameObject.SetActive(true),
-                                                    actionOnRelease: (obj) => obj.gameObject.SetActive(false),
-                                                    actionOnDestroy: (obj) => Destroy(obj.gameObject),
-                                                    defaultCapacity: concurrentChunks,
-                                                        maxSize: concurrentChunks * 2
+                actionOnGet: (obj) => obj.gameObject.SetActive(true),
+                actionOnRelease: (obj) => obj.gameObject.SetActive(false),
+                actionOnDestroy: (obj) => Destroy(obj.gameObject),
+                defaultCapacity: concurrentChunks,
+                maxSize: concurrentChunks * 2
+            );
+        }
+
+        if (portalChunkPrefab != null)
+        {
+            portalChunkPool = new ObjectPool<TrackChunk>(
+                createFunc: () => Instantiate(portalChunkPrefab, transform),
+                actionOnGet: (obj) => obj.gameObject.SetActive(true),
+                actionOnRelease: (obj) => obj.gameObject.SetActive(false),
+                actionOnDestroy: (obj) => Destroy(obj.gameObject),
+                defaultCapacity: 2,
+                maxSize: 4
             );
         }
     }
 
     private void SpawnRandomChunk()
     {
+        if (enablePortalSpawning && portalChunkPrefab != null && (totalSpawnedChunks + 1) >= portalInterval && ((totalSpawnedChunks + 1) % portalInterval == 0))
+        {
+            // If in Labyrinth mode, ensure we are heading forward before spawning linear portal chunk
+            if (!enableLabyrinthTurns || Mathf.Abs(currentNetHeading) < 10f)
+            {
+                lastSpawnedPrefab = portalChunkPrefab;
+                SpawnChunk(portalChunkPrefab, portalChunkPool);
+                return;
+            }
+        }
+
         if (availableChunks.Count == 0) return;
 
         float lastTurn = (lastSpawnedPrefab != null && lastSpawnedPrefab.connectionPoint != null)
@@ -248,7 +281,8 @@ public class ChunkSpawner : MonoBehaviour
 
         bool isLinearChunk = (prefab.connectionPoint == null || Mathf.Abs(Mathf.DeltaAngle(0f, prefab.connectionPoint.localEulerAngles.y)) < 15f);
 
-        if (enablePortalSpawning && totalSpawnedChunks >= portalInterval && (totalSpawnedChunks % portalInterval == 0) && isLinearChunk)
+        // Fallback procedural portal creation only if no dedicated portalChunkPrefab was configured
+        if (portalChunkPrefab == null && enablePortalSpawning && totalSpawnedChunks >= portalInterval && (totalSpawnedChunks % portalInterval == 0) && isLinearChunk)
         {
             Vector3 gatePos = new Vector3(0f, 0.05f, 15f);
             PortalTrigger.CreatePortalGate(newChunk.transform, gatePos);
