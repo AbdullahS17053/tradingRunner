@@ -22,4 +22,16 @@ public class TrackChunk : MonoBehaviour
             coin.gameObject.SetActive(true);
         }
     }
+
+    private void OnDisable()
+    {
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = transform.GetChild(i);
+            if (child.GetComponent<PowerUpPickup>() != null || child.GetComponent<PortalTrigger>() != null)
+            {
+                Destroy(child.gameObject);
+            }
+        }
+    }
 }

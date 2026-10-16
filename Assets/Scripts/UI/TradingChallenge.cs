@@ -29,7 +29,7 @@ public class TradingChallenge : MonoBehaviour
     private void OnEnable()
     {
         challengeActive = false;
-        GameManager.Instance.isTradingChallengeActive = false;
+        if (GameManager.Instance != null) GameManager.Instance.isTradingChallengeActive = false;
         isClosing = false;
         if (challengeUI != null) challengeUI.SetActive(false);
         if (redLaserWall != null) redLaserWall.SetActive(true);

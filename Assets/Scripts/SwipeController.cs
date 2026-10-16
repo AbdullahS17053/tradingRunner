@@ -12,7 +12,7 @@ public class SwipeController : MonoBehaviour
 
     private void Update()
     {
-        if (GameManager.Instance != null && GameManager.Instance.isGameOver || GameManager.Instance.isTradingChallengeActive)
+        if (GameManager.Instance != null && (GameManager.Instance.isGameOver || GameManager.Instance.isTradingChallengeActive))
         {
             return;
         }

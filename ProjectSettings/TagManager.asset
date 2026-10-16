@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Obstacle
   - TradingMenu
+  - PowerUp
   layers:
   - Default
   - TransparentFX

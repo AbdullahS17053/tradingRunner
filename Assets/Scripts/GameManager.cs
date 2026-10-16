@@ -15,6 +15,13 @@ public class GameManager : MonoBehaviour
     public float distanceRun = 0f;
     public int correctTrades = 0;
 
+    // Persistent run stats across portal transitions
+    public static bool isLoopingRun = false;
+    public static int carryOverTakeProfit = 0;
+    public static float carryOverDistance = 0f;
+    public static int carryOverTrades = 0;
+    public static float carryOverSpeedMultiplier = 1f;
+
     [Header("Difficulty Progression")]
     public float currentSpeedMultiplier = 1f;
     public float speedIncreaseRate = 0.02f;
@@ -50,7 +57,23 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        if (isLoopingRun)
+        {
+            takeProfit = carryOverTakeProfit;
+            distanceRun = carryOverDistance;
+            correctTrades = carryOverTrades;
+            currentSpeedMultiplier = Mathf.Max(1f, carryOverSpeedMultiplier);
+        }
+        else
+        {
+            carryOverTakeProfit = 0;
+            carryOverDistance = 0f;
+            carryOverTrades = 0;
+            carryOverSpeedMultiplier = 1f;
+        }
+
         UpdateTradesUI();
+        UpdateDistanceUI();
 
         if (gameOverPanel != null)
         {
@@ -135,6 +158,12 @@ public class GameManager : MonoBehaviour
 
     public void TriggerGameOver()
     {
+        isLoopingRun = false;
+        carryOverTakeProfit = 0;
+        carryOverDistance = 0f;
+        carryOverTrades = 0;
+        carryOverSpeedMultiplier = 1f;
+
         if (RunnerController.Instance != null)
         {
             RunnerController.Instance.enabled = false;

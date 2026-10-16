@@ -77,7 +77,17 @@ public class RunnerController : MonoBehaviour
         Vector3 startPos = transform.position;
         startPos.x = targetXPosition;
         transform.position = startPos;
+
+        if (Camera.main != null)
+        {
+            defaultCameraFOV = Camera.main.fieldOfView;
+        }
     }
+
+    private float defaultCameraFOV = 60f;
+
+    [Header("Testing Auto-Play Assist")]
+    public bool enableAutoPilot = false;
 
     private void Update()
     {
@@ -88,10 +98,60 @@ public class RunnerController : MonoBehaviour
         else if (groundedGraceTimer > 0f)
             groundedGraceTimer -= Time.deltaTime;
 
+        if (enableAutoPilot)
+        {
+            HandleAutoPilot();
+        }
+
         HandleKeyboardInput();
         MovePlayer();
         UpdateAnimations();
+        UpdateSpeedBoostEffects();
         HandleSlidingTimer();
+    }
+
+    private void HandleAutoPilot()
+    {
+        Vector3 origin = transform.position + Vector3.up * 0.4f;
+        Vector3 forward = PathForward;
+
+        if (Physics.SphereCast(origin, 0.5f, forward, out RaycastHit hit, 7.0f))
+        {
+            if (hit.collider.CompareTag("Obstacle"))
+            {
+                if (hit.point.y - transform.position.y < 1.35f)
+                {
+                    if (IsPlayerGrounded && !isSliding)
+                    {
+                        TriggerJump();
+                    }
+                }
+                else
+                {
+                    if (IsPlayerGrounded && !isSliding)
+                    {
+                        TriggerSlide();
+                    }
+                }
+            }
+        }
+    }
+
+    private void UpdateSpeedBoostEffects()
+    {
+        bool isBoosting = PowerUpManager.Instance != null && PowerUpManager.Instance.IsSpeedBoostActive;
+
+        Camera cam = Camera.main;
+        if (cam != null)
+        {
+            float targetFOV = isBoosting ? (defaultCameraFOV + 15f) : defaultCameraFOV;
+            cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, targetFOV, 8f * Time.deltaTime);
+        }
+
+        if (animator != null)
+        {
+            animator.speed = isBoosting ? 1.35f : 1.0f;
+        }
     }
 
     private void HandleKeyboardInput()
@@ -115,8 +175,29 @@ public class RunnerController : MonoBehaviour
     public float VerticalVelocity => velocity.y;
     public bool IsDead => isDead;
 
+    private LabyrinthTurnZone currentTurnZone;
+
+    public void RegisterActiveTurnZone(LabyrinthTurnZone zone)
+    {
+        currentTurnZone = zone;
+    }
+
+    public void UnregisterActiveTurnZone(LabyrinthTurnZone zone)
+    {
+        if (currentTurnZone == zone) currentTurnZone = null;
+    }
+
     public void MoveLane(int direction)
     {
+        if (enableLabyrinthTurns && currentTurnZone != null && !currentTurnZone.HasTriggered)
+        {
+            float requestedAngle = (direction < 0) ? -90f : 90f;
+            if (currentTurnZone.ExecuteTurn(this, requestedAngle))
+            {
+                return; // Consumed as corner turn!
+            }
+        }
+
         int desiredLane = Mathf.Clamp(currentLane + direction, 0, numberOfLanes - 1);
 
         if (desiredLane != currentLane)
@@ -199,6 +280,10 @@ public class RunnerController : MonoBehaviour
         velocity.y += gravity * Time.deltaTime;
 
         float currentSpeedMultiplier = GameManager.Instance != null ? GameManager.Instance.currentSpeedMultiplier : 1f;
+        if (PowerUpManager.Instance != null && PowerUpManager.Instance.IsSpeedBoostActive)
+        {
+            currentSpeedMultiplier *= 2.0f;
+        }
         float currentForwardSpeed = forwardSpeed * currentSpeedMultiplier;
 
         if (!enableLabyrinthTurns)
@@ -265,11 +350,35 @@ public class RunnerController : MonoBehaviour
     {
         if (other.CompareTag("Obstacle"))
         {
+            if (PowerUpManager.Instance != null)
+            {
+                if (PowerUpManager.Instance.IsInvincible)
+                {
+                    // Obliterate obstacle
+                    other.gameObject.SetActive(false);
+                    if (SoundManager.Instance != null && SoundManager.Instance.crashSound != null)
+                    {
+                        SoundManager.Instance.PlaySFX(SoundManager.Instance.crashSound);
+                    }
+                    if (CameraShake.Instance != null)
+                    {
+                        CameraShake.Instance.ShakeCamera(0.2f, 0.15f);
+                    }
+                    return;
+                }
+                else if (PowerUpManager.Instance.ConsumeShield())
+                {
+                    // Shield absorbed the hit and gave temporary grace
+                    other.gameObject.SetActive(false);
+                    return;
+                }
+            }
+
             Die();
         }
     }
 
-    private void Die()
+    public void Die()
     {
         if (isDead) return;
         isDead = true;
