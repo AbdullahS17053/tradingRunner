@@ -119,11 +119,11 @@ public class PowerUpHUD : MonoBehaviour
                     if (powerBarText != null)
                     {
                         powerBarText.text = "Power Bar";
-                        powerBarText.fontSize = 38f;
+                        powerBarText.fontSize = 28f;
                         powerBarText.alignment = TextAlignmentOptions.MidlineLeft;
                         RectTransform trt = txt.GetComponent<RectTransform>();
-                        trt.anchoredPosition = new Vector2(160f, 8f);
-                        trt.sizeDelta = new Vector2(380f, 60f);
+                        trt.anchoredPosition = new Vector2(130f, 0f);
+                        trt.sizeDelta = new Vector2(400f, 60f);
                     }
                 }
 
@@ -188,26 +188,43 @@ public class PowerUpHUD : MonoBehaviour
                 powerBarPanel.SetActive(true);
             }
 
-            string nameString = (type == PowerUpType.SpeedBoost) ? "2X SPEED BOOST" : "SHIELD";
-            if (powerBarText != null)
-            {
-                powerBarText.text = $"{nameString} ({remaining:F1}s)";
-            }
+            Color typeColor = PowerUpPickup.GetColorForType(type);
 
-            float fill = Mathf.Clamp01(remaining / duration);
-            if (powerFillBar != null)
+            if (type == PowerUpType.Shield)
             {
-                powerFillBar.fillAmount = fill;
-                powerFillBar.color = (type == PowerUpType.SpeedBoost)
-                    ? new Color(1f, 0.45f, 0.05f, 0.95f)
-                    : new Color(0f, 0.85f, 1f, 0.95f);
+                if (powerBarText != null)
+                {
+                    powerBarText.text = "SHIELD ACTIVE (1 HIT)";
+                }
+                if (powerFillBar != null)
+                {
+                    powerFillBar.fillAmount = 1f;
+                    powerFillBar.color = new Color(typeColor.r, typeColor.g, typeColor.b, 0.95f);
+                }
+                if (powerBarIcon != null)
+                {
+                    powerBarIcon.color = typeColor;
+                }
             }
-
-            if (powerBarIcon != null)
+            else
             {
-                powerBarIcon.color = (type == PowerUpType.SpeedBoost)
-                    ? new Color(1f, 0.65f, 0.15f)
-                    : new Color(0.2f, 0.9f, 1f);
+                string nameString = PowerUpPickup.GetDisplayName(type);
+                if (powerBarText != null)
+                {
+                    powerBarText.text = $"{nameString} ({remaining:F1}s)";
+                }
+
+                float fill = Mathf.Clamp01(remaining / duration);
+                if (powerFillBar != null)
+                {
+                    powerFillBar.fillAmount = fill;
+                    powerFillBar.color = new Color(typeColor.r, typeColor.g, typeColor.b, 0.95f);
+                }
+
+                if (powerBarIcon != null)
+                {
+                    powerBarIcon.color = typeColor;
+                }
             }
         }
     }
@@ -222,8 +239,10 @@ public class PowerUpHUD : MonoBehaviour
 
     public void ShowPowerUpAnnouncement(PowerUpType type)
     {
-        string title = (type == PowerUpType.SpeedBoost) ? ">> 2X SPEED BOOST ACTIVATED! <<" : ">> SHIELD FORCEFIELD ACTIVATED! <<";
-        Color col = (type == PowerUpType.SpeedBoost) ? new Color(1f, 0.5f, 0.05f) : new Color(0.1f, 0.85f, 1f);
+        string title = (type == PowerUpType.Shield)
+            ? ">> SHIELD FORCEFIELD ACTIVATED! <<"
+            : $">> {PowerUpPickup.GetDisplayName(type)} ACTIVATED! <<";
+        Color col = PowerUpPickup.GetColorForType(type);
         CreateAnnouncementToast(title, col);
     }
 

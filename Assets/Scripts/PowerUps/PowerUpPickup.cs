@@ -73,7 +73,18 @@ public class PowerUpPickup : MonoBehaviour
         {
             if (rend.material != null)
             {
-                rend.material.color = color;
+                bool isIconAtlas = rend.material.name.Contains("PolygonIcons");
+                if (!isIconAtlas)
+                {
+                    if (rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", color);
+                    if (rend.material.HasProperty("_Color")) rend.material.SetColor("_Color", color);
+                }
+                else
+                {
+                    if (rend.material.HasProperty("_BaseColor")) rend.material.SetColor("_BaseColor", Color.white);
+                    if (rend.material.HasProperty("_Color")) rend.material.SetColor("_Color", Color.white);
+                }
+
                 if (rend.material.HasProperty("_EmissionColor"))
                 {
                     rend.material.EnableKeyword("_EMISSION");

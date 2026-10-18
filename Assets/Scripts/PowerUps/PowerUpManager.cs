@@ -169,11 +169,13 @@ public class PowerUpManager : MonoBehaviour
 
     public bool IsActive(PowerUpType type)
     {
+        if (type == PowerUpType.Shield) return hasShield;
         return activeTimers.ContainsKey(type) && activeTimers[type] > 0f;
     }
 
     public float GetRemainingTime(PowerUpType type)
     {
+        if (type == PowerUpType.Shield) return hasShield ? 999f : 0f;
         return activeTimers.TryGetValue(type, out float time) ? Mathf.Max(0f, time) : 0f;
     }
 
@@ -189,10 +191,9 @@ public class PowerUpManager : MonoBehaviour
         if (type == PowerUpType.Shield)
         {
             hasShield = true;
-            activeTimers[PowerUpType.Shield] = powerUpDuration;
             AttachVFX(PowerUpType.Shield);
             PlayActivationSound();
-            OnPowerUpUpdated?.Invoke(PowerUpType.Shield, powerUpDuration, powerUpDuration);
+            OnPowerUpUpdated?.Invoke(PowerUpType.Shield, 1f, 1f);
             return;
         }
 
@@ -310,25 +311,21 @@ public class PowerUpManager : MonoBehaviour
         if (target == null) return;
 
         bool isSpaceship = FindObjectOfType<SpaceshipController>() != null;
+
+        if (type == PowerUpType.Shield)
+        {
+            GameObject shieldRoot = new GameObject("PlayerShieldAura");
+            shieldRoot.transform.SetParent(target, false);
+            shieldRoot.transform.localPosition = GetVFXOffset(PowerUpType.Shield, isSpaceship);
+            PlayerShieldAura aura = shieldRoot.AddComponent<PlayerShieldAura>();
+            aura.Setup(isSpaceship);
+            attachedVFX[type] = shieldRoot;
+            return;
+        }
+
         if (!isSpaceship)
         {
-            if (type == PowerUpType.Shield)
-            {
-                GameObject shieldAura = LoadVFXPrefab(PowerUpType.Shield);
-                if (shieldAura != null)
-                {
-                    GameObject auraInst = Instantiate(shieldAura, target);
-                    auraInst.transform.localPosition = new Vector3(0f, 1.0f, 0f);
-                    auraInst.transform.localScale = Vector3.one * 1.35f;
-                    attachedVFX[type] = auraInst;
-                }
-                else
-                {
-                    GameObject aura = CreateProceduralAura(PowerUpType.Shield, target, false);
-                    if (aura != null) attachedVFX[type] = aura;
-                }
-            }
-            else if (type == PowerUpType.SpeedBoost)
+            if (type == PowerUpType.SpeedBoost)
             {
                 GameObject windPrefab = Resources.Load<GameObject>("PowerUps/FX_Wind_Streaks_01");
                 if (windPrefab == null) windPrefab = LoadVFXPrefab(PowerUpType.SpeedBoost);
@@ -494,15 +491,24 @@ public class PowerUpManager : MonoBehaviour
     private void SpawnShieldShatterFX()
     {
         Transform target = GetActiveTargetTransform();
-        Vector3 pos = target != null ? target.position + Vector3.up : transform.position;
+        Vector3 pos = target != null ? target.position + Vector3.up * 0.8f : transform.position;
 
         GameObject shatter = new GameObject("ShieldShatter");
         shatter.transform.position = pos;
         Light flash = shatter.AddComponent<Light>();
         flash.type = LightType.Point;
-        flash.range = 8f;
-        flash.intensity = 6f;
-        flash.color = new Color(0.4f, 0.8f, 1f);
+        flash.range = 9f;
+        flash.intensity = 7f;
+        flash.color = new Color(0.3f, 0.85f, 1f);
+
+        GameObject burstPrefab = Resources.Load<GameObject>("PowerUps/FX_Sparkle_Orbit_01");
+        if (burstPrefab != null)
+        {
+            GameObject burst = Instantiate(burstPrefab, pos, Quaternion.identity);
+            burst.transform.localScale = Vector3.one * 2.2f;
+            Destroy(burst, 0.85f);
+        }
+
         Destroy(shatter, 0.35f);
     }
 
