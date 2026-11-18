@@ -3,14 +3,8 @@ using UnityEditor;
 using UnityEditor.Animations;
 using System.IO;
 
-[InitializeOnLoad]
 public class SetupMenuAnimations
 {
-    static SetupMenuAnimations()
-    {
-        EditorApplication.delayCall += ExecuteSetup;
-    }
-
     [MenuItem("Tools/Setup Menu Animations")]
     public static void ExecuteSetup()
     {
@@ -18,6 +12,15 @@ public class SetupMenuAnimations
         ConfigureAnimationFBX("Assets/Assets/Animations/Sit To Stand.fbx", "Sit To Stand", false);
 
         SetupPlayerAnimatorController();
+
+        try
+        {
+            SetupMainMenuUI.ExecuteSetup();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError("[SetupMenuAnimations] Error running SetupMainMenuUI: " + ex);
+        }
     }
 
     private static void ConfigureAnimationFBX(string path, string clipName, bool loop)
