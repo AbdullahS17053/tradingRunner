@@ -79,16 +79,18 @@ public class PortalTrigger : MonoBehaviour
             string currentSceneName = SceneManager.GetActiveScene().name;
             int currentIndex = SceneManager.GetActiveScene().buildIndex;
 
-            // Known build indices: 0 = Main (Cyberpunk), 2 = space world, 3 = Labyrinth World
+            // Known build indices: 0 = Main (Cyberpunk/City), 2 = space world, 3 = Labyrinth World, 4 = Castle level
             System.Collections.Generic.List<int> candidateScenes = new System.Collections.Generic.List<int>();
 
-            bool isCyberpunk = currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase) || currentIndex == 0;
+            bool isCyberpunk = currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase) || currentSceneName.Equals("City", System.StringComparison.OrdinalIgnoreCase) || currentIndex == 0;
             bool isSpace = currentSceneName.IndexOf("space", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 2;
             bool isLabyrinth = currentSceneName.IndexOf("Labyrinth", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 3;
+            bool isCastle = currentSceneName.IndexOf("Castle", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 4;
 
-            if (!isCyberpunk) candidateScenes.Add(0); // Main
+            if (!isCyberpunk) candidateScenes.Add(0); // City / Cyberpunk
             if (!isSpace) candidateScenes.Add(2);     // space world
             if (!isLabyrinth) candidateScenes.Add(3); // Labyrinth World
+            if (!isCastle) candidateScenes.Add(4);    // Castle level
 
             if (candidateScenes.Count > 0)
             {

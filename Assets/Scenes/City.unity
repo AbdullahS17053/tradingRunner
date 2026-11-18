@@ -443,13 +443,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1c2d3e4f5061728394a5b6c7d8e9f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transitionDuration: 0.35
-  useScalePunch: 0
-  punchStartScale: {x: 0.85, y: 0.85, z: 1}
-  animatedPanel: {fileID: 2126089791}
+  menuCamera: {fileID: 0}
+  player: {fileID: 0}
+  playerAnimator: {fileID: 0}
+  runnerController: {fileID: 0}
+  menuCanvasGroup: {fileID: 0}
+  menuCamPosition: {x: 0.694, y: 0.306, z: 11.879}
+  menuCamRotation: {x: -8.387, y: 562.243, z: 0}
+  runnerCamOffset: {x: 0, y: 2.467, z: -3.53}
+  runnerCamRotation: {x: 15, y: 0, z: 0}
   playButton: {fileID: 450688541}
-  exitButton: {fileID: 899127133}
+  charactersButton: {fileID: 0}
+  storeButton: {fileID: 0}
+  rankingButton: {fileID: 0}
+  forexQuizButton: {fileID: 0}
   settingsButton: {fileID: 1635684902}
+  exitButton: {fileID: 899127133}
+  soundButton: {fileID: 0}
+  soundIcon: {fileID: 0}
+  musicButton: {fileID: 0}
+  musicIcon: {fileID: 0}
+  cloudSaveButton: {fileID: 0}
+  soundOnSprite: {fileID: 0}
+  soundOffSprite: {fileID: 0}
+  musicOnSprite: {fileID: 0}
+  musicOffSprite: {fileID: 0}
+  currenciesContainer: {fileID: 0}
+  coinsText: {fileID: 0}
+  gemsText: {fileID: 0}
+  cameraTransitionDuration: 1.2
+  sprintBeforeLoadDuration: 0.05
+  targetGameplaySceneName: City
+  targetGameplaySceneIndex: 0
+  settingsPanel: {fileID: 0}
 --- !u!225 &42906743
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -7220,15 +7246,15 @@ RectTransform:
   m_GameObject: {fileID: 1472047925}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.3333334, y: 1.3333334, z: 1.3333334}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1033751864}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 260, y: 0}
-  m_SizeDelta: {x: 450, y: 120}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 106.72656, y: 8}
+  m_SizeDelta: {x: 540.5468, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1472047927
 MonoBehaviour:
@@ -7278,8 +7304,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 58
-  m_fontSizeBase: 58
+  m_fontSize: 54.88
+  m_fontSizeBase: 54.88
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -7314,7 +7340,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: -460.86307, w: 0.00018111222}
+  m_margin: {x: 0, y: 0, z: 0.49441528, w: 0.00018111222}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -9043,10 +9069,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1033751864}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.08, y: 0.1}
-  m_AnchorMax: {x: 0.92, y: 0.22}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -53.5}
+  m_SizeDelta: {x: 658, y: 19}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1869675777
 MonoBehaviour:

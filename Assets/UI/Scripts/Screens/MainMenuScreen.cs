@@ -53,7 +53,8 @@ namespace SciFiUI.Screens
         [Header("Sequence Timings")]
         [SerializeField] private float cameraTransitionDuration = 1.2f;
         [SerializeField] private float sprintBeforeLoadDuration = 0.05f;
-        [SerializeField] private int targetGameplaySceneIndex = 0; // City scene
+        [SerializeField] private string targetGameplaySceneName = "City";
+        [SerializeField] private int targetGameplaySceneIndex = 0; // Fallback index
 
         [Header("Settings Panel")]
         [SerializeField] private GameObject settingsPanel;
@@ -259,6 +260,11 @@ namespace SciFiUI.Screens
             }
             if (runnerController != null)
             {
+                CharacterController cc = runnerController.GetComponent<CharacterController>();
+                if (cc != null)
+                {
+                    cc.enabled = true;
+                }
                 runnerController.enabled = true;
             }
 
@@ -280,13 +286,22 @@ namespace SciFiUI.Screens
             // 6. Brief sprint forward then load City gameplay scene
             yield return new WaitForSeconds(sprintBeforeLoadDuration);
 
+            string currentSceneName = SceneManager.GetActiveScene().name;
+            string sceneToLoad = !string.IsNullOrEmpty(targetGameplaySceneName) ? targetGameplaySceneName : "City";
+
+            // Safety guard: NEVER reload MainMenu when Play is clicked
+            if (sceneToLoad.Equals(currentSceneName, System.StringComparison.OrdinalIgnoreCase))
+            {
+                sceneToLoad = "City";
+            }
+
             if (LevelLoader.Instance != null)
             {
-                LevelLoader.Instance.LoadScene(targetGameplaySceneIndex);
+                LevelLoader.Instance.LoadScene(sceneToLoad);
             }
             else
             {
-                SceneManager.LoadScene(targetGameplaySceneIndex);
+                SceneManager.LoadScene(sceneToLoad);
             }
         }
 

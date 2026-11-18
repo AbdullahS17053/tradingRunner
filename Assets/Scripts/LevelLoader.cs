@@ -27,10 +27,28 @@ public class LevelLoader : MonoBehaviour
         StartCoroutine(LoadLevelRoutine(sceneIndex));
     }
 
+    public void LoadScene(string sceneName)
+    {
+        StartCoroutine(LoadLevelByNameRoutine(sceneName));
+    }
+
     public void RestartLevel()
     {
         int currentSceneIndex = SceneManager.GetActiveScene().buildIndex;
         StartCoroutine(LoadLevelRoutine(currentSceneIndex));
+    }
+
+    private IEnumerator LoadLevelByNameRoutine(string sceneName)
+    {
+        if (transitionAnimator != null)
+        {
+            transitionAnimator.SetTrigger("Start");
+        }
+
+        yield return new WaitForSecondsRealtime(transitionTime);
+
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(sceneName);
     }
 
     private IEnumerator LoadLevelRoutine(int sceneIndex)

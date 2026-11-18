@@ -95,7 +95,7 @@ public class RunnerController : MonoBehaviour
     {
         if (isDead || isWarping) return;
 
-        if (controller.isGrounded)
+        if (controller != null && controller.enabled && controller.isGrounded)
             groundedGraceTimer = 0.12f;
         else if (groundedGraceTimer > 0f)
             groundedGraceTimer -= Time.deltaTime;
@@ -341,7 +341,10 @@ public class RunnerController : MonoBehaviour
             float moveX = newX - transform.position.x;
 
             Vector3 linearMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
-            controller.Move(linearMoveVector);
+            if (controller != null && controller.enabled)
+            {
+                controller.Move(linearMoveVector);
+            }
             return;
         }
 
@@ -363,11 +366,14 @@ public class RunnerController : MonoBehaviour
 
         Vector3 moveVector = (forwardDir * (currentForwardSpeed * Time.deltaTime))
                            + (rightDir * moveLateral)
-                           + (Vector3.up * (velocity.y * Time.deltaTime));
+                           + (Vector3.up * currentForwardSpeed * 0f + Vector3.up * (velocity.y * Time.deltaTime));
 
-        controller.Move(moveVector);
-        if (controller.isGrounded)
-            groundedGraceTimer = 0.12f;
+        if (controller != null && controller.enabled)
+        {
+            controller.Move(moveVector);
+            if (controller.isGrounded)
+                groundedGraceTimer = 0.12f;
+        }
     }
 
     public void ExecuteCornerTurn(Vector3 newOrigin, Quaternion newRotation, float turnAngle)
@@ -399,14 +405,19 @@ public class RunnerController : MonoBehaviour
     {
         if (isWarping || isDead) return;
 
-        if (other.CompareTag("Obstacle"))
+        FomoBot bot = other.GetComponent<FomoBot>();
+        bool isHazard = other.CompareTag("Obstacle") || bot != null;
+
+        if (isHazard)
         {
             if (PowerUpManager.Instance != null)
             {
                 if (PowerUpManager.Instance.IsInvincible)
                 {
-                    // Obliterate obstacle
-                    other.gameObject.SetActive(false);
+                    // Obliterate obstacle or bot
+                    if (bot != null) bot.DestroyBot();
+                    else other.gameObject.SetActive(false);
+
                     if (SoundManager.Instance != null && SoundManager.Instance.crashSound != null)
                     {
                         SoundManager.Instance.PlaySFX(SoundManager.Instance.crashSound);
@@ -420,13 +431,33 @@ public class RunnerController : MonoBehaviour
                 else if (PowerUpManager.Instance.ConsumeShield())
                 {
                     // Shield absorbed the hit and gave temporary grace
-                    other.gameObject.SetActive(false);
+                    if (bot != null) bot.DestroyBot();
+                    else other.gameObject.SetActive(false);
                     return;
                 }
             }
 
             Die();
         }
+    }
+
+    public void RevivePlayer()
+    {
+        isDead = false;
+        isSliding = false;
+        if (controller != null)
+        {
+            controller.height = originalHeight;
+            controller.center = originalCenter;
+        }
+        if (deathParticles != null) deathParticles.Stop();
+        if (animator != null)
+        {
+            animator.Rebind();
+            animator.Play("Sprint", 0, 0f);
+            animator.SetBool("GameStarted", true);
+        }
+        enabled = true;
     }
 
     public void Die()
@@ -458,7 +489,12 @@ public class RunnerController : MonoBehaviour
 
     private IEnumerator DeathRoutine()
     {
-        yield return new WaitForSeconds(2.0f);
+        yield return new WaitForSeconds(1.5f);
+
+        if (GemReviveManager.Instance != null && GemReviveManager.Instance.TryPromptRevive())
+        {
+            yield break;
+        }
 
         if (GameManager.Instance != null)
         {
