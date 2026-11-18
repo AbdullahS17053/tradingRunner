@@ -13,14 +13,7 @@ public class SetupMenuAnimations
 
         SetupPlayerAnimatorController();
 
-        try
-        {
-            SetupMainMenuUI.ExecuteSetup();
-        }
-        catch (System.Exception ex)
-        {
-            Debug.LogError("[SetupMenuAnimations] Error running SetupMainMenuUI: " + ex);
-        }
+
     }
 
     private static void ConfigureAnimationFBX(string path, string clipName, bool loop)

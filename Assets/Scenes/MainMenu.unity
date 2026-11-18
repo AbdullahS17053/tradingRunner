@@ -609,77 +609,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!1 &156388784
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 156388786}
-  - component: {fileID: 156388785}
-  m_Layer: 0
-  m_Name: MainMenuController
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &156388785
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 156388784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b4d497526607044c88db55ced61149d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  menuCamera: {fileID: 820460408}
-  player: {fileID: 3569279737778797934}
-  playerAnimator: {fileID: 1389133596}
-  runnerController: {fileID: 3569279737778797933}
-  menuCanvasGroup: {fileID: 1691538611}
-  menuCamPosition: {x: 0.694, y: 0.306, z: 11.879}
-  menuCamRotation: {x: -8.387, y: 562.243, z: 0}
-  runnerCamOffset: {x: 0, y: 2.467, z: -3.53}
-  runnerCamRotation: {x: 15, y: 0, z: 0}
-  playButton: {fileID: 1585541077}
-  charactersButton: {fileID: 18787340}
-  storeButton: {fileID: 1491021809}
-  rankingButton: {fileID: 594167097}
-  forexQuizButton: {fileID: 874732435}
-  settingsButton: {fileID: 5897777}
-  soundButton: {fileID: 415738844}
-  soundIcon: {fileID: 1433540304}
-  musicButton: {fileID: 1263931384}
-  musicIcon: {fileID: 1895723411}
-  cloudSaveButton: {fileID: 1980202981}
-  soundOnSprite: {fileID: 21300000, guid: 6d3f6cbbb3dbfae428f025eb66a54632, type: 3}
-  soundOffSprite: {fileID: 21300000, guid: 7a187dc9cd86b574c8c1c16ef39edfc8, type: 3}
-  musicOnSprite: {fileID: 21300000, guid: ee0c8013c71d5c8449832cb72211264b, type: 3}
-  musicOffSprite: {fileID: 21300000, guid: ee5492906e3965a47a0fa00dda49bd11, type: 3}
-  cameraTransitionDuration: 1.2
-  sprintBeforeLoadDuration: 0.05
-  targetGameplaySceneIndex: 0
---- !u!4 &156388786
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 156388784}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &200299864
 GameObject:
   m_ObjectHideFlags: 0
@@ -711,6 +640,7 @@ Transform:
   m_Children:
   - {fileID: 994812060}
   - {fileID: 1835317172}
+  - {fileID: 994812071}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &222008828
@@ -6266,6 +6196,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1691538610}
   - component: {fileID: 1691538611}
+  - component: {fileID: 1691538612}
   m_Layer: 0
   m_Name: ReferenceMenuUI
   m_TagString: Untagged
@@ -7602,7 +7533,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2143905018
 RectTransform:
   m_ObjectHideFlags: 0
@@ -16680,4 +16611,163 @@ SceneRoots:
   - {fileID: 2856809186317639334}
   - {fileID: 3569279737778797932}
   - {fileID: 820460409}
-  - {fileID: 156388786}
+--- !u!114 &1691538612
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1691538609}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1c2d3e4f5061728394a5b6c7d8e9f11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  menuCamera: {fileID: 820460408}
+  player: {fileID: 3569279737778797934}
+  playerAnimator: {fileID: 1389133596}
+  runnerController: {fileID: 3569279737778797933}
+  menuCanvasGroup: {fileID: 1691538611}
+  menuCamPosition: {x: 0.694, y: 0.306, z: 11.879}
+  menuCamRotation: {x: -8.387, y: 562.243, z: 0}
+  runnerCamOffset: {x: 0, y: 2.467, z: -3.53}
+  runnerCamRotation: {x: 15, y: 0, z: 0}
+  playButton: {fileID: 1585541077}
+  charactersButton: {fileID: 18787340}
+  storeButton: {fileID: 1491021809}
+  rankingButton: {fileID: 594167097}
+  forexQuizButton: {fileID: 874732435}
+  settingsButton: {fileID: 5897777}
+  exitButton: {fileID: 0}
+  soundButton: {fileID: 415738844}
+  soundIcon: {fileID: 1433540304}
+  musicButton: {fileID: 1263931384}
+  musicIcon: {fileID: 1895723411}
+  cloudSaveButton: {fileID: 1980202981}
+  soundOnSprite: {fileID: 21300000, guid: 6d3f6cbbb3dbfae428f025eb66a54632, type: 3}
+  soundOffSprite: {fileID: 21300000, guid: 7a187dc9cd86b574c8c1c16ef39edfc8, type: 3}
+  musicOnSprite: {fileID: 21300000, guid: ee0c8013c71d5c8449832cb72211264b, type: 3}
+  musicOffSprite: {fileID: 21300000, guid: ee5492906e3965a47a0fa00dda49bd11, type: 3}
+  currenciesContainer: {fileID: 2143905017}
+  coinsText: {fileID: 287003690}
+  gemsText: {fileID: 1959239233}
+  cameraTransitionDuration: 1.2
+  sprintBeforeLoadDuration: 0.05
+  targetGameplaySceneIndex: 0
+  settingsPanel: {fileID: 257736913758554483}
+--- !u!1 &994812070
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 994812071}
+  - component: {fileID: 994812072}
+  - component: {fileID: 994812073}
+  m_Layer: 0
+  m_Name: PlayerRimLight
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &994812071
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 994812070}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.2, y: 1.2, z: 10.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 200299865}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &994812072
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 994812070}
+  m_Enabled: 1
+  serializedVersion: 10
+  m_Type: 2
+  m_Shape: 0
+  m_Color: {r: 0.45, g: 0.85, b: 1, a: 1}
+  m_Intensity: 2.5
+  m_Range: 6
+  m_SpotAngle: 30
+  m_InnerSpotAngle: 21.80208
+  m_CookieSize: 10
+  m_Shadows:
+    m_Type: 0
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ShadowRadius: 0
+  m_ShadowAngle: 0
+--- !u!114 &994812073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 994812070}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa23460ee9ac0641, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 2
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
