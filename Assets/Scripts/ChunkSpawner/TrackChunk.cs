@@ -28,7 +28,7 @@ public class TrackChunk : MonoBehaviour
         for (int i = transform.childCount - 1; i >= 0; i--)
         {
             Transform child = transform.GetChild(i);
-            if (child.GetComponent<PowerUpPickup>() != null || child.GetComponent<PortalTrigger>() != null)
+            if (child.GetComponent<PowerUpPickup>() != null || child.GetComponent<PortalTrigger>() != null || child.GetComponent<FomoBot>() != null)
             {
                 Destroy(child.gameObject);
             }

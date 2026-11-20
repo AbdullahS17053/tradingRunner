@@ -41,6 +41,12 @@ public class ChunkSpawner : MonoBehaviour
     public GameObject shieldPowerUpPrefab;
     public GameObject speedBoostPowerUpPrefab;
 
+    [Header("Enemy Spawning Settings")]
+    public bool enableEnemySpawning = true;
+    public int enemyInterval = 3;
+    public int enemyStartChunk = 2;
+    public GameObject enemyPrefab;
+
     private int totalSpawnedChunks = 0;
     private int nextPowerUpTypeIndex = 0;
     private float powerUpTimer = 4.0f;
@@ -295,6 +301,52 @@ public class ChunkSpawner : MonoBehaviour
                 powerUpTimer = 0f;
             }
         }
+
+        // Procedural enemy spawning on linear chunks
+        if (enableEnemySpawning && totalSpawnedChunks >= enemyStartChunk && (totalSpawnedChunks % enemyInterval == 0) && isLinearChunk)
+        {
+            SpawnEnemyOnChunk(newChunk);
+        }
+    }
+
+    private void SpawnEnemyOnChunk(TrackChunk chunk)
+    {
+        // In Space level, only Spaceship enemy obstacles are allowed, no humanoid FOMO bot enemies
+        string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.ToLower();
+        if (currentScene.Contains("space"))
+        {
+            return;
+        }
+
+        GameObject prefabToSpawn = enemyPrefab;
+        if (prefabToSpawn == null)
+        {
+            prefabToSpawn = Resources.Load<GameObject>("Enemies/LabyrinthGuard_FomoBot");
+            if (prefabToSpawn == null)
+            {
+                prefabToSpawn = Resources.Load<GameObject>("Enemies/FOMO_Cyberpunk");
+            }
+        }
+
+        if (prefabToSpawn == null) return;
+
+        // Choose one of the 3 lanes: -2.5f (Left), 0f (Center), or 2.5f (Right)
+        float[] laneOffsets = new float[] { -2.5f, 0f, 2.5f };
+        float chosenLane = laneOffsets[Random.Range(0, laneOffsets.Length)];
+
+        // Position 16m down the corridor
+        float spawnZ = 16f;
+        Vector3 spawnWorldPos = chunk.transform.position 
+            + (chunk.transform.right * chosenLane) 
+            + (chunk.transform.forward * spawnZ);
+
+        // Face towards the approaching player
+        Quaternion spawnWorldRot = chunk.transform.rotation * Quaternion.Euler(0f, 180f, 0f);
+
+        GameObject enemyObj = Instantiate(prefabToSpawn, chunk.transform);
+        enemyObj.transform.position = spawnWorldPos;
+        enemyObj.transform.rotation = spawnWorldRot;
+        enemyObj.SetActive(true);
     }
 
     private void SpawnPowerUpOnChunk(TrackChunk chunk)

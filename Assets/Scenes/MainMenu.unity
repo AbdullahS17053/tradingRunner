@@ -4120,15 +4120,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa23460ee9ac0641, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_Version: 2
-  m_UsePipelineSettings: 1
-  m_AdditionalLightsShadowResolutionTier: 2
-  m_LightLayerMask: 1
-  m_CustomShadowLayers: 0
-  m_ShadowLayerMask: 1
-  m_LightCookieSize: {x: 1, y: 1}
-  m_LightCookieOffset: {x: 0, y: 0}
-  m_SoftShadowQuality: 0
 --- !u!114 &994812074
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6358,8 +6349,8 @@ MonoBehaviour:
   currenciesContainer: {fileID: 2143905017}
   coinsText: {fileID: 287003690}
   gemsText: {fileID: 1959239233}
-  cameraTransitionDuration: 1.2
-  sprintBeforeLoadDuration: 0.05
+  cameraTransitionDuration: 1.1
+  standCompletionWait: 0.4
   targetGameplaySceneName: City
   targetGameplaySceneIndex: 0
   settingsPanel: {fileID: 257736913758554483}
@@ -10163,7 +10154,7 @@ MonoBehaviour:
   coinsText: {fileID: 0}
   gemsText: {fileID: 0}
   cameraTransitionDuration: 1.2
-  sprintBeforeLoadDuration: 0.05
+  standCompletionWait: 0.8
   targetGameplaySceneName: City
   targetGameplaySceneIndex: 0
   settingsPanel: {fileID: 0}

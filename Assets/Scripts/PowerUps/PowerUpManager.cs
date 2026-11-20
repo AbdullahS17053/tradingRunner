@@ -332,9 +332,19 @@ public class PowerUpManager : MonoBehaviour
                 if (windPrefab != null)
                 {
                     GameObject windInst = Instantiate(windPrefab, target);
-                    windInst.transform.localPosition = new Vector3(0f, 0.35f, -0.6f);
+                    windInst.transform.localPosition = new Vector3(0f, 0.15f, -0.45f);
                     windInst.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-                    windInst.transform.localScale = Vector3.one * 1.2f;
+                    windInst.transform.localScale = Vector3.one * 0.15f;
+
+                    // Ensure particle sizes are scaled and neat, never blinding the camera
+                    ParticleSystem[] psList = windInst.GetComponentsInChildren<ParticleSystem>();
+                    foreach (var ps in psList)
+                    {
+                        var main = ps.main;
+                        main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                        if (main.startSizeMultiplier > 0.3f) main.startSizeMultiplier = 0.2f;
+                    }
+
                     attachedVFX[type] = windInst;
                 }
             }
@@ -346,8 +356,20 @@ public class PowerUpManager : MonoBehaviour
         {
             GameObject instance = Instantiate(vfxPrefab, target);
             instance.transform.localPosition = GetVFXOffset(type, isSpaceship);
-            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localRotation = (type == PowerUpType.SpeedBoost) ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
             instance.transform.localScale = GetVFXScale(type, isSpaceship);
+
+            if (type == PowerUpType.SpeedBoost)
+            {
+                ParticleSystem[] psList = instance.GetComponentsInChildren<ParticleSystem>();
+                foreach (var ps in psList)
+                {
+                    var main = ps.main;
+                    main.scalingMode = ParticleSystemScalingMode.Hierarchy;
+                    if (main.startSizeMultiplier > 0.3f) main.startSizeMultiplier = 0.2f;
+                }
+            }
+
             attachedVFX[type] = instance;
         }
         else
@@ -411,7 +433,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return new Vector3(0f, 0.2f, 0f);
-                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.1f, -1.8f);
+                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.05f, -1.6f);
                 case PowerUpType.CoinMagnet: return new Vector3(0f, 0.4f, 0f);
                 case PowerUpType.DoubleTP: return new Vector3(0f, 0.6f, 0f);
                 case PowerUpType.WeaponUpgrade: return new Vector3(0f, 0.2f, 1.2f);
@@ -425,7 +447,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return new Vector3(0f, 1.0f, 0f);
-                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.4f, -1.2f);
+                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.15f, -0.45f);
                 case PowerUpType.CoinMagnet: return new Vector3(0f, 0.8f, 0f);
                 case PowerUpType.DoubleTP: return new Vector3(0f, 1.2f, 0f);
                 case PowerUpType.WeaponUpgrade: return new Vector3(0f, 0.6f, 0.8f);
@@ -443,7 +465,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return new Vector3(2.4f, 1.5f, 3.2f);
-                case PowerUpType.SpeedBoost: return new Vector3(1.6f, 1.6f, 2.2f);
+                case PowerUpType.SpeedBoost: return new Vector3(0.25f, 0.25f, 0.4f);
                 case PowerUpType.CoinMagnet: return Vector3.one * 1.8f;
                 case PowerUpType.DoubleTP: return Vector3.one * 1.6f;
                 case PowerUpType.WeaponUpgrade: return Vector3.one * 1.5f;
@@ -457,7 +479,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return Vector3.one * 1.5f;
-                case PowerUpType.SpeedBoost: return Vector3.one * 1.2f;
+                case PowerUpType.SpeedBoost: return Vector3.one * 0.15f;
                 case PowerUpType.Invincibility: return Vector3.one * 1.4f;
                 default: return Vector3.one;
             }

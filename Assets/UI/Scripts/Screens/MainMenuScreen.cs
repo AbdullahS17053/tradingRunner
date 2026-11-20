@@ -52,7 +52,7 @@ namespace SciFiUI.Screens
 
         [Header("Sequence Timings")]
         [SerializeField] private float cameraTransitionDuration = 1.2f;
-        [SerializeField] private float sprintBeforeLoadDuration = 0.05f;
+        [SerializeField] private float standCompletionWait = 0.15f;
         [SerializeField] private string targetGameplaySceneName = "City";
         [SerializeField] private int targetGameplaySceneIndex = 0; // Fallback index
 
@@ -253,39 +253,16 @@ namespace SciFiUI.Screens
                 menuCamera.transform.rotation = camTargetRot;
             }
 
-            // 4. Enable runner controller & start sprint
-            if (playerAnimator != null)
+            // 4. Brief pause as the camera finishes settling behind player while standing up
+            if (standCompletionWait > 0f)
             {
-                playerAnimator.SetBool("GameStarted", true);
-            }
-            if (runnerController != null)
-            {
-                CharacterController cc = runnerController.GetComponent<CharacterController>();
-                if (cc != null)
-                {
-                    cc.enabled = true;
-                }
-                runnerController.enabled = true;
+                yield return new WaitForSeconds(standCompletionWait);
             }
 
-            // 5. If player has child Main Camera, activate it and switch from menu camera
-            if (player != null && menuCamera != null)
-            {
-                Camera playerCam = player.GetComponentInChildren<Camera>(true);
-                if (playerCam != null && playerCam != menuCamera)
-                {
-                    playerCam.gameObject.SetActive(true);
-                    menuCamera.gameObject.SetActive(false);
-                }
-                else
-                {
-                    menuCamera.transform.SetParent(player.transform, true);
-                }
-            }
+            // Keep runnerController disabled in MainMenu so player does NOT slide across the floor.
+            // When the scene fades to black, the character is upright, preventing any running in place in the menu.
 
-            // 6. Brief sprint forward then load City gameplay scene
-            yield return new WaitForSeconds(sprintBeforeLoadDuration);
-
+            // 5. Load City gameplay scene via LevelLoader (screen fades to black)
             string currentSceneName = SceneManager.GetActiveScene().name;
             string sceneToLoad = !string.IsNullOrEmpty(targetGameplaySceneName) ? targetGameplaySceneName : "City";
 

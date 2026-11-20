@@ -1,0 +1,516 @@
+﻿Runner Forex 3D: Phase 3 Requirements
+Client: Kevin
+Deadline: 6 December 2026
+Phase 3 covers: infinite worlds, enemies, collectible gems with gem revive, the Luxury Castle with its trading-chart challenge, the main menu with the Forex Quiz, and Firebase saving. Kevin's PDFs contain many more ideas (30 characters, shop, ads, leaderboard and more). Those are for Phase 4; see the last section. Where his documents disagree, this document follows his latest instructions.
+Ground rules
+* Work in the existing Unity repository from Phase 2. Keep the Cyberpunk, Labyrinth (Maze) and Space worlds, their environments and their portals. Extend them; do not rebuild them.
+* Mobile game for Android and iOS, portrait orientation. Design reference is 1080 x 1920 (9:16), but the game must fill each phone's screen without stretching, cut-off gameplay or black bars. The runner, Abbot (the dog), lanes, obstacles and touch controls must stay in frame.
+* Enemy and art designs must be original. Kevin does not want demons, aliens or pharaohs, and nothing copied from existing games.
+* Any third-party asset, music or plugin must be licensed for commercial use in a monetized mobile game. Keep a list of every one with its source and license; it goes in the handover.
+* Put tunable numbers (distances, gem costs, spawn rates, rewards, timers) in config assets such as ScriptableObjects, not hard-coded, so they can be balanced later.
+* No server-side code in this phase. Firebase stays on the free Spark plan, which does not allow Cloud Functions. All checks are client-side.
+Game loop
+The game has no final level. The player runs forever and moves between worlds through portals, in this fixed order:
+1. Cyberpunk City, then a portal to the Labyrinth (Maze).
+2. Labyrinth, then a portal to Space.
+3. Space, then a portal to the Luxury Castle.
+4. Luxury Castle: run inside, sit at a computer and complete 5 trading challenges. On success the player earns 1,000 coins, stands up, and the portal to Cyberpunk City unlocks. The loop then starts again.
+A portal appears after a configurable distance in each running world. Running continues after every portal and after the castle challenge; the challenge pauses the run but must not end it.
+1. Infinite worlds
+* Turn each existing world into an endless run built from reusable track segments that are spawned ahead of the player and recycled behind (object pooling). Memory use must stay flat no matter how long the run lasts.
+* Difficulty increases gradually with distance (speed, obstacle density, enemy frequency).
+* Every generated layout must be passable. No impossible combinations of obstacles and enemies.
+* Show the distance run during gameplay and save the player's best distance.
+* Cyberpunk City: reuse the existing city sections and obstacles; add moving obstacles and assemble segments in random order.
+* Labyrinth: reuse the existing maze. Add branching paths, random but safe layouts and a guaranteed way through every section.
+* Space: reuse the existing environment. Add moving platforms, gravity-themed obstacles and continuously generated safe routes.
+* Coins and gems spawn along the track in every world (see section 3 for gems).
+2. Enemies
+Kevin calls the enemies "FOMO Bots". Each world gets its own variant, and the same bots also appear inside the castle.
+* Cyberpunk: neon-style robot guard.
+* Labyrinth: a guard or creature that roams the maze.
+* Space: flying drones.
+* Castle: FOMO Bots moving through the interior during the indoor run.
+Requirements for all enemies:
+* Clear silhouettes and a readable warning before an attack (wind-up animation, glow or sound), so the player can react.
+* Enemies can come from in front, and from behind where that is still fair. The player avoids them with the normal swipe controls (lane change, jump, slide), and the player character uses its dodge animations.
+* Fair collision boxes that match what the player sees.
+* Enemy count and speed scale with the difficulty curve.
+* Being hit ends the run and opens the revive screen (section 3).
+3. Collectible gems and gem revive
+* Gems are collectible pickups in every world, including the castle interior. They should be rarer than coins and clearly different from them.
+* The gem balance is saved (section 7) and shown in the game UI.
+* When the player loses a run, show a revive screen with the current gem balance and two choices: spend gems to revive, or end the run and restart for free.
+* Revive cost and the maximum number of revives per run are configurable. Suggested starting values: 1 gem for the first revive, doubling each time, at most 3 revives per run.
+* A revive puts the player back at a safe point, clears nearby obstacles and enemies, and gives a short period of invulnerability.
+* Gems are deducted exactly once, and only after the revive succeeds. A retry or reconnect must never charge twice.
+* No gem purchases or ad revives in this phase. Leave space in the revive screen for them later.
+4. Luxury Castle
+The fourth location, where the trading challenge happens. Kevin's concept image is "Mansion and Game Flow Concept.jpg" in this folder. Use it for the look of the castle; where it differs from this document (for example, it shows three exit portals), follow this document.
+Exterior
+* Large lit-up castle with grand gates, a red-carpet entrance, landscaped grounds and luxury sports cars parked outside.
+* Two friendly security guards at the entrance, animated. As the player approaches, one guard lets them in and the giant doors open.
+Interior run
+* Luxury Baroque look: marble hall, chandeliers, gold details, elegant sofas and furniture, large framed trading-chart paintings, dramatic lighting.
+* The player runs through the interior, avoids obstacles and FOMO Bots, and collects coins and gems. Kevin wants the castle coins to show the face of Abbot, his dog.
+* A trading floor with many computers showing animated candlestick charts. Decorative computers can be instanced copies; only the one the player uses needs to be interactive.
+* Castle music: a mysterious, luxury-feel track that is royalty-free or licensed for commercial use. Record the license.
+Computer, reward and exit
+* The player walks to a computer and sits down (sitting animation). A smooth camera transition moves to the computer screen. The player is safe from enemies while seated.
+* Computer sounds (keyboard, interface beeps) play during the challenge, with the castle music underneath.
+* After passing, play a reward effect for the 1,000 coins (coin burst and sound), then the stand-up animation, then a portal-unlock animation as the portal to Cyberpunk City opens. There is only one exit portal.
+* Camera: third person while moving; a clear, readable view of the computer screen on a phone while seated.
+5. Castle computer challenge
+The castle has its own bank of 30 chart challenges (Appendix A). It is completely separate from the Forex Quiz in the main menu (section 6). Do not mix the two banks or reuse one for the other.
+Challenge data
+* Store the 30 challenges as editable data (JSON or ScriptableObjects), not in code. Each challenge has: number, level, currency pair, timeframe (H1 or M15), chart scenario, choices (BUY, SELL, WAIT), correct answer, explanation, and the candle and RSI data used to draw its chart.
+* Challenges 1 to 10 are beginner, 11 to 20 intermediate and 21 to 30 advanced. Each visit still draws from all 30.
+Chart screen
+* An animated, fictional chart with green and red candles, a yellow liquidity-sweep line, support and resistance lines, an RSI(14, Close) panel with lines at 70 and 30, and a label with the pair and timeframe.
+* The chart must match the scenario text. If the scenario says price sweeps below support and a bullish candle closes back above it, the chart must show exactly that. Draw each chart from its stored candle data and animate the last candles forming.
+* Challenge 15 needs a candle that is still forming (not closed) when the question appears.
+* Challenges 24 and 27 cannot be shown by the chart alone. Add an on-screen note: a "High-impact news soon, spreads widening" banner for 24, and a "Stop-loss risk too high for this account" label for 27.
+* Three large buttons: BUY, SELL and WAIT. Show a progress indicator (for example "Challenge 2 of 5") and the countdown timer.
+* After each answer, show whether it was correct, the correct answer and the explanation from Appendix A.
+Rules
+* Each visit draws 5 different challenges at random from the 30. Avoid repeating the previous visit's challenges where possible.
+* All 5 correct: award exactly 1,000 coins once and save immediately, then play the reward, stand-up and portal-unlock sequence (section 4).
+* Prevent duplicate reward claims through retries, reconnects or app restarts during the reward.
+* Timer: 40 minutes maximum per attempt. It is a limit, not a waiting period.
+Wrong answers and retries
+* A wrong answer shows the explanation and fails the attempt, with no reward.
+* The player can retry straight away with a fresh random set of 5. The 40-minute timer restarts with each attempt.
+* If the timer runs out, the attempt fails the same way.
+* After 3 failed attempts, a "Leave without reward" option appears and opens the portal, so the player is never stuck in the castle.
+* Questions per visit, reward, timer length and the number of failed attempts before the leave option are all configurable.
+6. Main menu and Forex Quiz
+Kevin's concept image is "Main Menu Concept.jpg" in this folder.
+Main menu
+* Show the title exactly as "RunnerForex3D", with the player character and Abbot.
+* Buttons: PLAY, CHARACTERS, STORE, RANKING, FOREX QUIZ, SETTINGS. Show the coin and gem balances and the cloud-save status.
+* Working in this phase: PLAY, FOREX QUIZ and SETTINGS.
+* CHARACTERS, STORE and RANKING are UI only. Build their screens so the menu looks complete, but with no working features. Show a "Coming soon" message. Their functionality is Phase 4.
+* SETTINGS holds the account options from section 7: signed-in email, sign out, password reset and delete account.
+* Touch-friendly buttons and readable text on iPhone and Android screens.
+Forex Quiz (practice mode)
+* A separate practice area opened from FOREX QUIZ. It has nothing to do with the castle challenge and uses its own 30 questions (Appendix B).
+* Level select: BEGINNER, INTERMEDIATE, ADVANCED and BACK. Each level has 10 questions.
+* Each question has three choices (A, B, C), one correct answer and an explanation.
+* A practice round asks 5 random questions from the chosen level with no repeats in the round. Shuffle the order of the choices.
+* After each answer, show correct or incorrect with the explanation. Show the score at the end of the round.
+* Save the best score for each level to the player's profile (section 7). Practice rounds give no coins; keep a configurable coins-per-correct-answer value set to 0 in case Kevin wants it later.
+* Store the questions as editable data, the same way as the castle challenges, and reuse the same quiz UI components where possible.
+7. Firebase save system
+Kevin owns the existing Firebase project "ForexRunner". Cloud Firestore is created and Email/Password sign-in is enabled. Kevin has given access to adilshafiq784@gmail.com; please confirm you can open the project. Do not enable other sign-in methods or billing without asking.
+Accounts
+* Register both the Android and iOS apps in the Firebase project and add the Firebase Unity SDK (Authentication and Firestore).
+* Screens: register, sign in, sign out and password reset (Firebase's reset email). The player stays signed in between launches.
+* Delete account option in SETTINGS. Apple requires this for any app that lets users create an account.
+* Never store passwords ourselves; Firebase Authentication handles them.
+What is saved
+* Coins, gems, best distance and scores, world progress, castle challenge history (completed sets and recently drawn challenge IDs), Forex Quiz best score per level, and settings.
+* Characters, purchases, profile and inventory do not exist yet. Add empty fields for them in the player document now (selected character set to the starter) so Phase 4 can fill them in without changing the data structure.
+* One Firestore document per player, keyed by their user ID, for example players/{uid}.
+* Save automatically at sensible points: end of run, castle reward, revive, world change, quiz result, and app pause or quit. The player never has to save manually.
+* Progress restores when the player signs in again after reinstalling, or on another phone, including Android to iOS and back.
+* Offline play works using Firestore's offline cache and syncs when the connection returns. Handle interrupted saves without losing or duplicating coins or gems (use transactions or a "reward already granted" flag).
+Security
+* Firestore security rules: each signed-in player can read and write only their own document. Nothing is open to everyone.
+* No Cloud Functions or server-side validation in this phase (Spark plan).
+Handover notes for Firebase
+* A short note explaining the data structure, how accounts are created and restored, and how Kevin can see player data and usage in the Firebase console.
+Delivery checklist
+* All work pushed to the existing project repository from Phase 2, with its full history.
+* The project opens in the stated Unity version with no compile errors, console errors, missing references or pink materials.
+* A README with the Unity version, render pipeline, packages and plugins with versions, and step-by-step setup and build instructions for Android and iOS.
+* An Android test build (APK) that runs on a real phone.
+* iOS: Firebase iOS app registered and the project builds to an Xcode project, with the steps documented.
+* Editable source files (FBX or Blender) for any custom models made in this phase, such as the castle, guards and enemies.
+* A guide for editing the castle challenges and the Forex Quiz questions (how to change or add one).
+* The third-party asset and license list, including the castle music.
+* No passwords, keys or personal credentials in the shared project.
+* A short screen-recorded demo showing: the main menu and Forex Quiz; endless runs in all three worlds with enemies, gems and gem revive; portals; the castle entrance, indoor run and sitting at the computer; a castle challenge with a wrong answer and retry, then a full pass with the 1,000-coin reward, stand-up and portal unlock; and save and restore after reinstall or on a second device.
+Phase 4 (not in this phase)
+Kevin's PDFs and concept images include the items below. Do not build them now, even where a concept image shows them:
+* CHARACTERS: the 30 playable characters, their models, animations and special powers, the photo-based Kevin model, and character selection or unlocking.
+* STORE: the character shop, coin price tiers, in-app purchases, buying gems and restore purchases.
+* RANKING: the worldwide leaderboard, profile photos and avatars.
+* AdMob ads of any kind.
+* Main menu music, music and SFX settings, tutorial and help screens, website and YouTube branding.
+* Shields, power-ups and the "Elite Boss" from the concept image.
+Appendix A: Castle computer challenges
+Kevin's 30 challenges, unchanged. Choices for every challenge are BUY, SELL and WAIT. Levels: 1 to 10 beginner, 11 to 20 intermediate, 21 to 30 advanced. The answers are the intended reading of each fictional chart, not real trading advice.
+#
+	Pair, timeframe
+	Chart scenario
+	Answer
+	Explanation
+	1
+	XAUUSD, M15
+	Price sweeps below the yellow support line. A bullish candle closes back above support. RSI rises from 27.
+	BUY
+	The completed lower sweep and bullish close support a possible upward reversal.
+	2
+	EURUSD, H1
+	Price sweeps above resistance and closes back inside the range. RSI declines from 76.
+	SELL
+	The upper sweep and bearish close support a possible downward reversal.
+	3
+	GBPUSD, M15
+	RSI reaches 78, but price keeps rising without a completed liquidity sweep or bearish close.
+	WAIT
+	Overbought RSI alone does not confirm a reversal.
+	4
+	AUDUSD, H1
+	Price sweeps below support, closes back inside the range, and RSI recovers from 25.
+	BUY
+	The completed lower sweep supports a possible bullish reversal.
+	5
+	USDJPY, M15
+	Price sweeps above resistance, forms a long upper wick, closes below the yellow line, and RSI declines from 74.
+	SELL
+	The upper sweep and bearish rejection support a possible downward reversal.
+	6
+	XAUUSD, H1
+	Price approaches a previous low. RSI is 32, but no liquidity sweep has occurred.
+	WAIT
+	The required setup is incomplete.
+	7
+	EURGBP, M15
+	Price sweeps below support, closes back above the yellow line, and RSI rises from 28.
+	BUY
+	The lower sweep and bullish recovery support a potential reversal.
+	8
+	USDCAD, H1
+	Price sweeps above a previous high, closes below resistance, and RSI falls from 73.
+	SELL
+	The completed upper sweep supports a potential bearish reversal.
+	9
+	NZDUSD, M15
+	Price moves sideways, RSI is 51, and no meaningful liquidity sweep occurs.
+	WAIT
+	There is insufficient confirmation.
+	10
+	XAUUSD, H1
+	Price sweeps below a previous low, closes above support, and RSI recovers from 29.
+	BUY
+	The completed lower sweep supports a potential bullish reversal.
+	11
+	EURUSD, M15
+	Price sweeps above resistance, closes back below the yellow line, and RSI falls from 75.
+	SELL
+	The completed upper sweep supports a possible bearish reversal.
+	12
+	GBPJPY, H1
+	RSI is 24 and price continues falling below support without returning inside the range.
+	WAIT
+	Oversold conditions can persist during a strong downtrend.
+	13
+	AUDCAD, M15
+	Price sweeps below support, forms a long lower wick, closes above the yellow line, and RSI rises from 26.
+	BUY
+	The confirmed lower sweep supports a potential bullish reversal.
+	14
+	XAUUSD, H1
+	RSI reaches 79. Price sweeps above a previous high and closes below resistance.
+	SELL
+	The upper sweep and bearish close support a potential downward reversal.
+	15
+	EURJPY, M15
+	Price moves above resistance, but the candle remains open. RSI is 72.
+	WAIT
+	The strategy requires a completed candle for confirmation.
+	16
+	GBPUSD, H1
+	Price sweeps below a previous low, closes above the yellow support line, and RSI recovers from 27.
+	BUY
+	The completed lower sweep supports a possible upward reversal.
+	17
+	USDCAD, M15
+	Price sweeps above resistance, closes back inside the range, and RSI falls from 77.
+	SELL
+	The upper sweep and bearish return support a potential downward reversal.
+	18
+	XAUUSD, M15
+	RSI is 28, but price only touches support without sweeping below it.
+	WAIT
+	The required liquidity sweep has not occurred.
+	19
+	NZDUSD, H1
+	Price sweeps below support, closes back above the yellow line, and RSI rises from 25.
+	BUY
+	The lower sweep and bullish confirmation support a potential reversal.
+	20
+	EURAUD, M15
+	Price sweeps above resistance, rejects the breakout, closes inside the range, and RSI falls from 74.
+	SELL
+	The completed upper sweep supports a possible bearish reversal.
+	21
+	XAUUSD, H1
+	Price sweeps above resistance and closes below it, but the next candle breaks strongly above the swept high and closes there.
+	WAIT
+	The original bearish reversal idea has been invalidated and requires reassessment.
+	22
+	EURUSD, M15
+	Price sweeps below a previous low, closes back inside the range, and RSI rises from 23 to 33.
+	BUY
+	The lower sweep and bullish confirmation support a possible upward reversal.
+	23
+	GBPJPY, H1
+	Price sweeps above resistance, forms a bearish rejection candle closing back inside the range, and RSI falls from 81.
+	SELL
+	The upper sweep and bearish rejection support a potential downward reversal.
+	24
+	XAUUSD, M15
+	Price sweeps below support, but major economic news approaches, spreads widen, and stable bullish confirmation is absent.
+	WAIT
+	Execution risk is elevated and the setup is incomplete.
+	25
+	AUDUSD, H1
+	Price sweeps below support, closes back inside the range, RSI recovers from 29, and the next candle holds inside the range.
+	BUY
+	The confirmed lower sweep supports a possible bullish reversal.
+	26
+	EURGBP, M15
+	Price sweeps above resistance, closes back below the yellow line, forms a second bearish candle, and RSI declines from 78.
+	SELL
+	The upper sweep and bearish follow-through support a potential downward reversal.
+	27
+	XAUUSD, H1
+	Price sweeps below support and closes back inside the range, but the proposed stop-loss would require excessive account risk.
+	WAIT
+	Risk management matters even when a technical setup appears promising.
+	28
+	USDCAD, M15
+	Price sweeps below support, forms a long lower wick, closes bullish, and RSI rises from 24 to 35.
+	BUY
+	The completed lower sweep supports a possible bullish reversal.
+	29
+	EURJPY, H1
+	Price sweeps above resistance, closes back inside the range, RSI falls from 77, and the following candle remains bearish.
+	SELL
+	The upper sweep and bearish continuation support a potential downward reversal.
+	30
+	XAUUSD, M15
+	Price breaks above resistance and closes above it. RSI is 76, but price has not returned inside the range.
+	WAIT
+	A breakout remaining outside the range is not a confirmed liquidity-sweep reversal.
+	
+
+Appendix B: Forex Quiz questions
+Kevin's 30 practice questions for the main menu, unchanged. Levels: 1 to 10 beginner, 11 to 20 intermediate, 21 to 30 advanced.
+#
+	Question
+	Choices
+	Answer
+	Explanation
+	1
+	What does a green candlestick usually mean?
+	A. Close is above open
+B. Price must rise next
+C. Trading is paused
+	A
+	The candle closed above its opening price.
+	2
+	What does a red candlestick usually mean?
+	A. Price must fall next
+B. Close is below open
+C. Market is closed
+	B
+	The candle closed below its opening price.
+	3
+	What does BUY mean in a trading simulation?
+	A. Expecting a rise
+B. Expecting a fall
+C. Closing the app
+	A
+	A buy position generally benefits from a price increase.
+	4
+	What does SELL mean in a trading simulation?
+	A. Expecting a rise
+B. Expecting a fall
+C. Earning free coins
+	B
+	A sell position generally benefits from a price decrease.
+	5
+	What is a stop-loss?
+	A. A guaranteed profit
+B. An order to limit loss
+C. A market forecast
+	B
+	It is an exit instruction, but slippage may occur.
+	6
+	What is take-profit?
+	A. An exit at a target price
+B. A guaranteed outcome
+C. A deposit
+	A
+	It can close a position when the specified target is reached.
+	7
+	What does a candle wick show?
+	A. Only the close
+B. Price extremes during the period
+C. Account balance
+	B
+	Wicks illustrate the high and low relative to the candle body.
+	8
+	What is a timeframe?
+	A. A chart interval
+B. A trading fee
+C. A currency
+	A
+	M15 represents 15-minute candles; H1 represents one-hour candles.
+	9
+	What is a support zone?
+	A. A possible buying-interest area
+B. A guaranteed floor
+C. An advertisement
+	A
+	Support may hold or break; it is not certain.
+	10
+	What is a resistance zone?
+	A. A guaranteed ceiling
+B. A possible selling-interest area
+C. A login screen
+	B
+	Resistance may hold or break.
+	11
+	What does RSI(14) measure?
+	A. Momentum of recent price changes
+B. Trading volume only
+C. Broker commissions
+	A
+	RSI is a momentum oscillator based on recent gains and losses.
+	12
+	RSI above 70 is often described as what?
+	A. Oversold
+B. Overbought
+C. Risk-free
+	B
+	Overbought does not automatically mean SELL.
+	13
+	RSI below 30 is often described as what?
+	A. Oversold
+B. Overbought
+C. Guaranteed BUY
+	A
+	Oversold does not automatically mean BUY.
+	14
+	What does H1 mean?
+	A. One-minute candles
+B. One-hour candles
+C. One-day candles
+	B
+	Each H1 candle covers one hour.
+	15
+	What does M15 mean?
+	A. 15-minute candles
+B. 15-hour candles
+C. 15-day candles
+	A
+	Each M15 candle covers fifteen minutes.
+	16
+	Why check H1 before M15?
+	A. To provide higher-timeframe context
+B. To guarantee a win
+C. To remove all volatility
+	A
+	H1 can help contextualize M15 signals.
+	17
+	What is a false breakout?
+	A. Price moves beyond a level then returns
+B. Price never moves
+C. A guaranteed reversal
+	A
+	False breaks can happen around key levels.
+	18
+	What does WAIT mean on a chart question?
+	A. No sufficiently clear setup
+B. A mandatory loss
+C. An automatic BUY
+	A
+	Waiting is appropriate when evidence is incomplete.
+	19
+	Why use a candle close for confirmation?
+	A. To reduce reacting to intrabar movement
+B. To guarantee profit
+C. To avoid stop-loss orders
+	A
+	A close gives more stable information than an unfinished candle.
+	20
+	What is risk/reward ratio?
+	A. Potential loss compared with potential gain
+B. Only the win rate
+C. Only spread
+	A
+	It compares defined downside and upside scenarios.
+	21
+	What is a liquidity sweep above a prior high?
+	A. Price briefly trades beyond the high
+B. Price cannot reverse
+C. An automatic SELL
+	A
+	A sweep may be followed by continuation or reversal.
+	22
+	After a sweep above resistance, what adds reversal evidence?
+	A. A candle closing back inside the range
+B. RSI above 70 alone
+C. A random guess
+	A
+	A return inside the range can support, but not guarantee, a reversal idea.
+	23
+	After a sweep below support, what adds reversal evidence?
+	A. A candle closing back inside the range
+B. A red candle anywhere
+C. A high spread
+	A
+	A recovery inside the range may support a bullish scenario.
+	24
+	H1 RSI is overbought, but M15 has no reversal confirmation. Choose:
+	A. SELL immediately
+B. WAIT
+C. BUY automatically
+	B
+	An overbought RSI alone is not enough to force a trade.
+	25
+	H1 RSI is oversold, but price keeps making lower lows. Choose:
+	A. BUY guaranteed
+B. SELL guaranteed
+C. WAIT for confirmation
+	C
+	Strong trends can remain oversold.
+	26
+	Price sweeps a high, closes inside, then breaks upward again. What is true?
+	A. The reversal is not guaranteed
+B. SELL must win
+C. Price cannot rally
+	A
+	Follow-through can invalidate a reversal thesis.
+	27
+	Why place a stop beyond meaningful structure?
+	A. To define invalidation, with risk limits
+B. To avoid every loss
+C. To double profit
+	A
+	Stops should reflect structure and affordable risk, not certainty.
+	28
+	What can happen during high-impact news?
+	A. Volatility and slippage can increase
+B. Spreads always shrink
+C. All trades win
+	A
+	Fast markets can worsen execution.
+	29
+	What does divergence between price and RSI suggest?
+	A. Potential momentum disagreement
+B. A certain reversal
+C. A guaranteed entry
+	A
+	Divergence is contextual evidence, not a guarantee.
+	30
+	What should a learner do if signals conflict?
+	A. WAIT and reassess
+B. Trade at random
+C. Ignore risk
+	A
+	No-trade is a valid decision when the setup is unclear.

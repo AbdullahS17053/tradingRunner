@@ -40,6 +40,7 @@ public class GameManager : MonoBehaviour
 
     public bool isGameOver = false;
     private bool gameStarted = false;
+    public bool IsGameStarted => gameStarted;
     public bool isCaptureSequenceActive = false;
     public bool isTradingChallengeActive = false;
 

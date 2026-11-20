@@ -84,6 +84,11 @@ public class RunnerController : MonoBehaviour
         {
             defaultCameraFOV = Camera.main.fieldOfView;
         }
+
+        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex != 1 && animator != null)
+        {
+            animator.Play("Sprint", 0, 0f);
+        }
     }
 
     private float defaultCameraFOV = 60f;
@@ -94,6 +99,7 @@ public class RunnerController : MonoBehaviour
     private void Update()
     {
         if (isDead || isWarping) return;
+        if (GameManager.Instance != null && !GameManager.Instance.IsGameStarted) return;
 
         if (controller != null && controller.enabled && controller.isGrounded)
             groundedGraceTimer = 0.12f;
@@ -433,6 +439,20 @@ public class RunnerController : MonoBehaviour
                     // Shield absorbed the hit and gave temporary grace
                     if (bot != null) bot.DestroyBot();
                     else other.gameObject.SetActive(false);
+                    return;
+                }
+            }
+
+            if (bot != null)
+            {
+                if (bot.canAvoidBySliding && isSliding)
+                {
+                    // Successfully slid under attack!
+                    return;
+                }
+                if (bot.canAvoidByJumping && (transform.position.y - bot.transform.position.y) >= bot.jumpClearanceHeight)
+                {
+                    // Successfully jumped over attack!
                     return;
                 }
             }

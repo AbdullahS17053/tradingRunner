@@ -15,13 +15,9 @@ public class PowerUpHUD : MonoBehaviour
                 _instance = Object.FindAnyObjectByType<PowerUpHUD>();
                 if (_instance == null)
                 {
-                    Canvas canvas = Object.FindAnyObjectByType<Canvas>();
-                    if (canvas != null)
-                    {
-                        GameObject go = new GameObject("PowerUpHUD");
-                        go.transform.SetParent(canvas.transform, false);
-                        _instance = go.AddComponent<PowerUpHUD>();
-                    }
+                    GameObject go = new GameObject("PowerUpHUD");
+                    _instance = go.AddComponent<PowerUpHUD>();
+                    DontDestroyOnLoad(go);
                 }
             }
             return _instance;
@@ -255,6 +251,13 @@ public class PowerUpHUD : MonoBehaviour
 
     private void CreateAnnouncementToast(string text, Color bannerColor)
     {
+        if (!gameObject.activeInHierarchy)
+        {
+            transform.SetParent(null);
+            gameObject.SetActive(true);
+            DontDestroyOnLoad(gameObject);
+        }
+
         Canvas canvas = FindObjectOfType<Canvas>();
         if (canvas == null) return;
 

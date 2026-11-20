@@ -1,51 +1,52 @@
 using System.Collections;
 using UnityEngine;
 
-public class FomoBot : MonoBehaviour
+/// <summary>
+/// Enemy variant of FOMO Bot inheriting from FOMOController.
+/// Uses the same FOMO character model and capabilities, but configured as a runner obstacle enemy.
+/// </summary>
+public class FomoBot : FOMOController
 {
     public enum BotBehaviorType
     {
-        FrontPatrolCharge,   // Spawns ahead, charges or patrols in lane, jump/slide/dodgeable
-        RearChaser           // Comes from behind with warning indicator, overtakes in lane
+        EnemyBeamBot,       // Default: Beam attack with 1.6s red screen warning & dodge window
+        FrontPatrolCharge,  // Charges / patrols down corridor
+        RearChaser          // Approaches from behind to overtake
     }
 
-    [Header("Behavior & Variant")]
-    public BotBehaviorType behaviorType = BotBehaviorType.FrontPatrolCharge;
+    [Header("Enemy Bot Identity & Behavior")]
+    public BotBehaviorType behaviorType = BotBehaviorType.EnemyBeamBot;
     public string botVariantName = "FOMO Bot";
 
-    [Header("Movement & Speeds")]
-    public float movementSpeed = 6.0f;
-    public float chargeMultiplier = 1.6f;
-    public float rearApproachSpeed = 22.0f; // Faster than runner forward speed to overtake
+    [Header("Movement Speeds")]
+    public float movementSpeed = 4.5f;
+    public float chargeMultiplier = 1.7f;
+    public float rearApproachSpeed = 22.0f;
     public float laneChangeInterval = 2.5f;
 
-    [Header("Attack & Telegraph Settings")]
-    public float telegraphDistance = 18f;
-    public float attackRange = 12f;
-    public GameObject warningIndicator; // Visual warning holographic marker or ground decal
-    public LineRenderer targetingLaser;
-    public Light telegraphLight;
-    public Color warningColor = new Color(1f, 0.15f, 0.15f, 1f);
+    [Header("Dodge & Collision Settings")]
+    public bool canAvoidBySliding = true;
+    public bool canAvoidByJumping = true;
+    public float jumpClearanceHeight = 1.1f;
 
-    [Header("Audio SFX")]
-    public AudioClip windupSound;
-    public AudioClip attackSound;
+    [Header("Components & Particle FX")]
+    public Collider botCollider;
+    public Animator botAnimator;
+    public ParticleSystem warningParticles;
+    public ParticleSystem slashParticles;
+    public ParticleSystem destroyParticles;
     public AudioClip destroyedSound;
 
-    [Header("Visual Effects & Destruction")]
-    public ParticleSystem warningParticles;
-    public ParticleSystem destroyParticles;
-    public Animator botAnimator;
-    public Collider botCollider;
-
-    private bool hasTelegraphed = false;
-    private bool isAttacking = false;
     private bool isDestroyed = false;
     private float currentLaneX = 0f;
-    private Transform playerTransform;
 
-    private void Awake()
+    protected override void Awake()
     {
+        // Enforce enemy beam mode
+        fomoMode = FOMOMode.EnemyBeamBot;
+
+        base.Awake();
+
         if (botCollider == null) botCollider = GetComponent<Collider>();
         if (botCollider != null) botCollider.isTrigger = true;
 
@@ -60,162 +61,103 @@ public class FomoBot : MonoBehaviour
         }
     }
 
-    private void Start()
+    protected override void Start()
     {
+        base.Start();
+
         if (botCollider == null) botCollider = GetComponent<Collider>();
         if (botCollider != null) botCollider.isTrigger = true;
-        if (botAnimator == null) botAnimator = GetComponentInChildren<Animator>();
-
-        if (RunnerController.Instance != null)
-        {
-            playerTransform = RunnerController.Instance.transform;
-        }
-
-        if (warningIndicator != null) warningIndicator.SetActive(false);
-        if (targetingLaser != null) targetingLaser.enabled = false;
-        if (telegraphLight != null) telegraphLight.enabled = false;
+        if (botAnimator == null) botAnimator = fomoAnimator;
 
         currentLaneX = transform.position.x;
     }
 
-    private Vector3 GetTrackForward()
-    {
-        if (RunnerController.Instance != null)
-        {
-            return RunnerController.Instance.transform.forward;
-        }
-        return Vector3.forward;
-    }
-
-    private void Update()
+    protected override void Update()
     {
         if (isDestroyed) return;
 
-        if (playerTransform == null)
+        if (player == null || runnerController == null)
         {
-            if (RunnerController.Instance != null) playerTransform = RunnerController.Instance.transform;
-            return;
+            FindPlayerReferences();
+            if (player == null) return;
         }
 
-        if (behaviorType == BotBehaviorType.FrontPatrolCharge)
+        if (behaviorType == BotBehaviorType.RearChaser)
         {
-            HandleFrontBotLogic();
+            HandleRearChaser();
         }
         else
         {
-            HandleRearChaserLogic();
+            HandleFrontEnemy();
         }
     }
 
-    private void HandleFrontBotLogic()
+    private void HandleFrontEnemy()
     {
-        Vector3 trackForward = GetTrackForward();
-        Vector3 toBot = transform.position - playerTransform.position;
+        Vector3 toBot = transform.position - player.position;
+        Vector3 trackForward = (transform.parent != null && transform.parent.GetComponent<TrackChunk>() != null)
+            ? transform.parent.forward
+            : -transform.forward;
+
         float distToPlayer = Vector3.Dot(toBot, trackForward);
 
-        // 1. Telegraph warning when player gets within range
-        if (distToPlayer <= telegraphDistance && distToPlayer > 0 && !hasTelegraphed)
+        // Advance along corridor only when not charging or firing beam
+        if (distToPlayer > 0f && !isEnemyAttacking)
         {
-            TriggerTelegraph();
+            float speedMult = GameManager.Instance != null ? GameManager.Instance.currentSpeedMultiplier : 1.0f;
+            transform.position += transform.forward * (movementSpeed * speedMult * 0.4f * Time.deltaTime);
         }
 
-        // 2. Charge or move toward player once telegraphed
-        if (distToPlayer <= attackRange && distToPlayer > 0)
+        // Trigger Beam Attack when within telegraph range
+        if (distToPlayer <= telegraphDistance && distToPlayer > 0f && !hasTriggeredAttack)
         {
-            if (!isAttacking)
-            {
-                isAttacking = true;
-                if (botAnimator != null) botAnimator.SetTrigger("Attack");
-                if (SoundManager.Instance != null && attackSound != null)
-                {
-                    SoundManager.Instance.PlaySFX(attackSound);
-                }
-            }
-
-            transform.position -= trackForward * (movementSpeed * chargeMultiplier * Time.deltaTime);
-        }
-        else if (distToPlayer > 0)
-        {
-            // Idle hover or slow forward patrol
-            transform.position -= trackForward * (movementSpeed * 0.5f * Time.deltaTime);
+            hasTriggeredAttack = true;
+            if (warningParticles != null) warningParticles.Play();
+            StartCoroutine(EnemyBeamSequenceWrapper());
         }
 
-        // If player has safely passed the bot, turn off warning
-        if (distToPlayer < -2f && hasTelegraphed)
-        {
-            CleanupTelegraph();
-        }
-
-        // Deactivate if far behind player
-        if (distToPlayer < -15f)
+        if (distToPlayer < -18f)
         {
             gameObject.SetActive(false);
         }
     }
 
-    private void HandleRearChaserLogic()
+    private IEnumerator EnemyBeamSequenceWrapper()
     {
-        Vector3 trackForward = GetTrackForward();
-        Vector3 toPlayer = playerTransform.position - transform.position;
-        float distBehindPlayer = Vector3.Dot(toPlayer, trackForward);
+        yield return StartCoroutine(EnemyBeamSequence());
+        if (warningParticles != null) warningParticles.Stop();
+    }
 
-        // Telegraph warning on player HUD/behind when approaching
-        if (distBehindPlayer <= telegraphDistance && distBehindPlayer > 0 && !hasTelegraphed)
+    private void HandleRearChaser()
+    {
+        Vector3 toPlayer = player.position - transform.position;
+        Vector3 trackForward = (transform.parent != null && transform.parent.GetComponent<TrackChunk>() != null)
+            ? transform.parent.forward
+            : transform.forward;
+
+        float distBehind = Vector3.Dot(toPlayer, trackForward);
+
+        if (distBehind <= telegraphDistance && distBehind > 0f && !hasTriggeredAttack)
         {
-            TriggerTelegraph();
+            hasTriggeredAttack = true;
+            if (AttackWarningHUD.Instance != null)
+            {
+                AttackWarningHUD.Instance.TriggerWarning(beamChargeDuration);
+            }
         }
 
-        // Move forward faster than player forwardSpeed to catch up and overtake
-        float runnerSpeed = RunnerController.Instance != null ? RunnerController.Instance.forwardSpeed : 15f;
-        float actualSpeed = runnerSpeed + 5f;
-        transform.position += trackForward * (actualSpeed * Time.deltaTime);
+        float runnerSpeed = runnerController != null ? runnerController.forwardSpeed : 15f;
+        float actualSpeed = runnerSpeed + (rearApproachSpeed * 0.4f);
+        transform.position += transform.forward * (actualSpeed * Time.deltaTime);
 
-        // Keep in lane
         Vector3 pos = transform.position;
         pos.x = Mathf.MoveTowards(pos.x, currentLaneX, 8f * Time.deltaTime);
         transform.position = pos;
 
-        // If chaser has passed the player safely
-        if (distBehindPlayer < -10f)
+        if (distBehind < -12f)
         {
-            CleanupTelegraph();
             gameObject.SetActive(false);
         }
-    }
-
-    private void TriggerTelegraph()
-    {
-        hasTelegraphed = true;
-
-        if (warningIndicator != null) warningIndicator.SetActive(true);
-        if (warningParticles != null) warningParticles.Play();
-
-        if (telegraphLight != null)
-        {
-            telegraphLight.color = warningColor;
-            telegraphLight.enabled = true;
-        }
-
-        if (targetingLaser != null && playerTransform != null)
-        {
-            targetingLaser.enabled = true;
-            targetingLaser.SetPosition(0, transform.position + Vector3.up * 1f);
-            targetingLaser.SetPosition(1, playerTransform.position + Vector3.up * 0.8f);
-        }
-
-        if (SoundManager.Instance != null)
-        {
-            if (windupSound != null) SoundManager.Instance.PlaySFX(windupSound);
-            else if (SoundManager.Instance.fomoAscendSound != null) SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoAscendSound);
-        }
-    }
-
-    private void CleanupTelegraph()
-    {
-        if (warningIndicator != null) warningIndicator.SetActive(false);
-        if (warningParticles != null) warningParticles.Stop();
-        if (targetingLaser != null) targetingLaser.enabled = false;
-        if (telegraphLight != null) telegraphLight.enabled = false;
     }
 
     private void OnTriggerEnter(Collider other)
@@ -224,25 +166,28 @@ public class FomoBot : MonoBehaviour
 
         if (other.CompareTag("Player"))
         {
-            // Check if player has invincible powerup or shield
-            if (PowerUpManager.Instance != null)
-            {
-                if (PowerUpManager.Instance.IsInvincible)
-                {
-                    DestroyBot();
-                    return;
-                }
-                else if (PowerUpManager.Instance.ConsumeShield())
-                {
-                    DestroyBot();
-                    return;
-                }
-            }
-
-            // Player hit by FOMO Bot!
             RunnerController runner = other.GetComponent<RunnerController>();
-            if (runner != null)
+            if (runner != null && !runner.IsDead)
             {
+                if (PowerUpManager.Instance != null && PowerUpManager.Instance.IsInvincible)
+                {
+                    DestroyBot();
+                    return;
+                }
+                if (PowerUpManager.Instance != null && PowerUpManager.Instance.ConsumeShield())
+                {
+                    DestroyBot();
+                    return;
+                }
+                if (canAvoidBySliding && runner.IsSliding)
+                {
+                    return;
+                }
+                if (canAvoidByJumping && (runner.transform.position.y - transform.position.y) >= jumpClearanceHeight)
+                {
+                    return;
+                }
+
                 runner.Die();
             }
         }
@@ -251,8 +196,8 @@ public class FomoBot : MonoBehaviour
     public void DestroyBot()
     {
         isDestroyed = true;
-        CleanupTelegraph();
-
+        if (fomoLaser != null) fomoLaser.enabled = false;
+        if (targetingLaser != null) targetingLaser.enabled = false;
         if (botCollider != null) botCollider.enabled = false;
 
         if (destroyParticles != null)
@@ -264,6 +209,7 @@ public class FomoBot : MonoBehaviour
         if (SoundManager.Instance != null)
         {
             if (destroyedSound != null) SoundManager.Instance.PlaySFX(destroyedSound);
+            else if (SoundManager.Instance.fomoDescendSound != null) SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoDescendSound);
             else if (SoundManager.Instance.crashSound != null) SoundManager.Instance.PlaySFX(SoundManager.Instance.crashSound);
         }
 
@@ -272,11 +218,10 @@ public class FomoBot : MonoBehaviour
 
     private IEnumerator DisableAfterDestroy()
     {
-        // Hide child meshes
         Renderer[] renderers = GetComponentsInChildren<Renderer>();
         foreach (var r in renderers)
         {
-            if (r != null && r != (Renderer)destroyParticles?.GetComponent<Renderer>())
+            if (r != null && (destroyParticles == null || r != destroyParticles.GetComponent<Renderer>()))
             {
                 r.enabled = false;
             }
@@ -291,8 +236,8 @@ public class FomoBot : MonoBehaviour
 
         if (botCollider != null) botCollider.enabled = true;
         isDestroyed = false;
-        hasTelegraphed = false;
-        isAttacking = false;
+        hasTriggeredAttack = false;
+        isEnemyAttacking = false;
         gameObject.SetActive(false);
     }
 }

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+  m_IndirectSpecularColor: {r: 0.0059606433, g: 0.003715619, b: 0.014231656, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -6783,6 +6783,11 @@ MonoBehaviour:
     type: 3}
   speedBoostPowerUpPrefab: {fileID: 6588334547211602384, guid: 934e0d03b40039c43bfbf3a9813c3d50,
     type: 3}
+  enableEnemySpawning: 1
+  enemyInterval: 3
+  enemyStartChunk: 2
+  enemyPrefab: {fileID: 6271747571894860710, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90,
+    type: 3}
 --- !u!1 &1236283798
 GameObject:
   m_ObjectHideFlags: 0
@@ -6835,13 +6840,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1c2d3e4f5061728394a5b6c7d8e9f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transitionDuration: 0.35
-  useScalePunch: 0
-  punchStartScale: {x: 0.85, y: 0.85, z: 1}
-  animatedPanel: {fileID: 1127367343}
+  menuCamera: {fileID: 0}
+  player: {fileID: 0}
+  playerAnimator: {fileID: 0}
+  runnerController: {fileID: 0}
+  menuCanvasGroup: {fileID: 0}
+  menuCamPosition: {x: 0.694, y: 0.306, z: 11.879}
+  menuCamRotation: {x: -8.387, y: 562.243, z: 0}
+  runnerCamOffset: {x: 0, y: 2.467, z: -3.53}
+  runnerCamRotation: {x: 15, y: 0, z: 0}
   playButton: {fileID: 522337377}
-  exitButton: {fileID: 1317346794}
+  charactersButton: {fileID: 0}
+  storeButton: {fileID: 0}
+  rankingButton: {fileID: 0}
+  forexQuizButton: {fileID: 0}
   settingsButton: {fileID: 218293152}
+  exitButton: {fileID: 1317346794}
+  soundButton: {fileID: 0}
+  soundIcon: {fileID: 0}
+  musicButton: {fileID: 0}
+  musicIcon: {fileID: 0}
+  cloudSaveButton: {fileID: 0}
+  soundOnSprite: {fileID: 0}
+  soundOffSprite: {fileID: 0}
+  musicOnSprite: {fileID: 0}
+  musicOffSprite: {fileID: 0}
+  currenciesContainer: {fileID: 0}
+  coinsText: {fileID: 0}
+  gemsText: {fileID: 0}
+  cameraTransitionDuration: 1.2
+  standCompletionWait: 0.15
+  targetGameplaySceneName: City
+  targetGameplaySceneIndex: 0
+  settingsPanel: {fileID: 0}
 --- !u!225 &1236283801
 CanvasGroup:
   m_ObjectHideFlags: 0
