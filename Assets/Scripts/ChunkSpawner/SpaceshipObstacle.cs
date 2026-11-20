@@ -96,20 +96,9 @@ public class SpaceshipObstacle : MonoBehaviour
         // 4. Setup Laser Cannon
         SetupShipLaserIfMissing();
 
-        // Align into an active track lane facing oncoming player
-        float[] laneOffsets = new float[] { -2.5f, 0f, 2.5f };
-        float targetLane = 0f;
-        if (RunnerController.Instance != null)
-        {
-            targetLane = RunnerController.Instance.TargetXPosition;
-        }
-        else
-        {
-            targetLane = laneOffsets[Random.Range(0, laneOffsets.Length)];
-        }
-
+        // Align into the middle track lane (X = 0) facing oncoming player
         Vector3 pos = transform.localPosition;
-        pos.x = targetLane;
+        pos.x = 0f; // Middle lane
         pos.y = Mathf.Max(pos.y, 0.85f);
         transform.localPosition = pos;
 
@@ -232,9 +221,8 @@ public class SpaceshipObstacle : MonoBehaviour
         Vector3 targetFloor = origin + (transform.forward * beamReach);
         targetFloor.y = 0.5f;
 
-        float chargeDuration = 2.2f;
+        float chargeDuration = 1.8f;
         float chargeElapsed = 0f;
-        float timeInFrontOfBeam = 0f;
         bool warningShown = false;
 
         while (chargeElapsed < chargeDuration)
@@ -252,8 +240,7 @@ public class SpaceshipObstacle : MonoBehaviour
                 targetingLaser.SetPosition(1, targetFloor);
             }
 
-            // Rule: If player is NOT in front of beam, screen effect won't work.
-            // If player comes in front of it for 1 second, AFTER that 1 second, screen shows effect.
+            // Immediate check: If player is in the lane of the enemy, effect starts immediately (zero wait time)!
             if (playerTransform != null)
             {
                 float shipX = transform.position.x;
@@ -264,11 +251,10 @@ public class SpaceshipObstacle : MonoBehaviour
 
                 if (isPlayerInFront)
                 {
-                    timeInFrontOfBeam += Time.deltaTime;
-                    if (timeInFrontOfBeam >= 1.0f && !warningShown)
+                    if (!warningShown)
                     {
                         warningShown = true;
-                        float remaining = Mathf.Max(0.8f, chargeDuration - chargeElapsed);
+                        float remaining = Mathf.Max(0.5f, chargeDuration - chargeElapsed);
                         if (AttackWarningHUD.Instance != null)
                         {
                             AttackWarningHUD.Instance.TriggerWarning(remaining);
@@ -277,16 +263,16 @@ public class SpaceshipObstacle : MonoBehaviour
                 }
                 else
                 {
-                    // Player stepped out or swiped to another safe lane
+                    // Player stepped out or swiped to another safe lane: dismiss warning and show dodged
                     if (warningShown)
                     {
                         warningShown = false;
                         if (AttackWarningHUD.Instance != null)
                         {
+                            AttackWarningHUD.Instance.DismissWarning();
                             AttackWarningHUD.Instance.ShowDodged();
                         }
                     }
-                    timeInFrontOfBeam = 0f;
                 }
             }
 

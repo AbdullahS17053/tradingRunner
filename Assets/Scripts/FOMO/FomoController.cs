@@ -419,9 +419,8 @@ public class FOMOController : MonoBehaviour
         Vector3 targetFloor = origin + (transform.forward * beamReach);
         targetFloor.y = 0.5f;
 
-        float chargeDuration = 2.2f;
+        float chargeDuration = 1.8f;
         float chargeElapsed = 0f;
-        float timeInFrontOfBeam = 0f;
         bool warningShown = false;
 
         while (chargeElapsed < chargeDuration)
@@ -439,8 +438,7 @@ public class FOMOController : MonoBehaviour
                 targetingLaser.SetPosition(1, targetFloor);
             }
 
-            // Rule: If player is NOT in front of beam, screen effect won't work.
-            // If player comes in front of it for 1 second, AFTER that 1 second, screen shows effect.
+            // Immediate check: If player is in the lane of the enemy, the effect starts immediately (zero wait time)!
             if (player != null)
             {
                 float botX = transform.position.x;
@@ -451,11 +449,10 @@ public class FOMOController : MonoBehaviour
 
                 if (isPlayerInFront)
                 {
-                    timeInFrontOfBeam += Time.deltaTime;
-                    if (timeInFrontOfBeam >= 1.0f && !warningShown)
+                    if (!warningShown)
                     {
                         warningShown = true;
-                        float remaining = Mathf.Max(0.8f, chargeDuration - chargeElapsed);
+                        float remaining = Mathf.Max(0.5f, chargeDuration - chargeElapsed);
                         if (AttackWarningHUD.Instance != null)
                         {
                             AttackWarningHUD.Instance.TriggerWarning(remaining);
@@ -464,16 +461,16 @@ public class FOMOController : MonoBehaviour
                 }
                 else
                 {
-                    // Player stepped out or swiped to another lane
+                    // Player stepped out or swiped to another lane: dismiss warning and show dodged
                     if (warningShown)
                     {
                         warningShown = false;
                         if (AttackWarningHUD.Instance != null)
                         {
+                            AttackWarningHUD.Instance.DismissWarning();
                             AttackWarningHUD.Instance.ShowDodged();
                         }
                     }
-                    timeInFrontOfBeam = 0f;
                 }
             }
 

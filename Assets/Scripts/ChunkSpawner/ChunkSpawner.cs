@@ -330,18 +330,31 @@ public class ChunkSpawner : MonoBehaviour
 
         if (prefabToSpawn == null) return;
 
-        // Choose one of the 3 lanes: -2.5f (Left), 0f (Center), or 2.5f (Right)
-        float[] laneOffsets = new float[] { -2.5f, 0f, 2.5f };
-        float chosenLane = laneOffsets[Random.Range(0, laneOffsets.Length)];
+        Vector3 spawnWorldPos;
+        Quaternion spawnWorldRot = chunk.transform.rotation * Quaternion.Euler(0f, 180f, 0f); // Face towards oncoming player
 
-        // Position 16m down the corridor
-        float spawnZ = 16f;
-        Vector3 spawnWorldPos = chunk.transform.position 
-            + (chunk.transform.right * chosenLane) 
-            + (chunk.transform.forward * spawnZ);
-
-        // Face towards the approaching player
-        Quaternion spawnWorldRot = chunk.transform.rotation * Quaternion.Euler(0f, 180f, 0f);
+        // Spawn in the middle where coins spawn in the middle
+        if (chunk.coinsParent != null && chunk.coinsParent.childCount > 0)
+        {
+            int middleIndex = chunk.coinsParent.childCount / 2;
+            Transform targetCoin = chunk.coinsParent.GetChild(middleIndex);
+            if (targetCoin != null)
+            {
+                spawnWorldPos = targetCoin.position;
+                // Align feet neatly onto the track surface where coins sit
+                spawnWorldPos.y = Mathf.Max(chunk.transform.position.y, targetCoin.position.y - 0.35f);
+                targetCoin.gameObject.SetActive(false); // Replace coin at this center position
+            }
+            else
+            {
+                spawnWorldPos = chunk.transform.position + (chunk.transform.forward * 16f);
+            }
+        }
+        else
+        {
+            // Center lane (0f lateral offset) in the middle of the track
+            spawnWorldPos = chunk.transform.position + (chunk.transform.forward * 16f);
+        }
 
         GameObject enemyObj = Instantiate(prefabToSpawn, chunk.transform);
         enemyObj.transform.position = spawnWorldPos;
