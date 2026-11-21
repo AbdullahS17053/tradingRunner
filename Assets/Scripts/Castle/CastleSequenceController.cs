@@ -20,7 +20,7 @@ namespace RunnerForex.Castle
         public Transform leftDoorWing;
         public Transform rightDoorWing;
         public float doorZPosition = 63.5f;
-        public float walkTriggerZPosition = 61.5f; // 1-2m before door
+        public float walkTriggerZPosition = 61.5f; // 1-2m before door in local Z
         public float walkSpeed = 2.6f;
 
         [Header("Computer Room Lane")]
@@ -48,9 +48,7 @@ namespace RunnerForex.Castle
 
         private RunnerController runner;
         private Camera activeCamera;
-        private Vector3 runnerCamOriginalLocalPos;
-        private Quaternion runnerCamOriginalLocalRot;
-        private Transform cameraFollowTarget;
+        private Transform gameplayRoot;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoInitInCastleScene()
@@ -78,11 +76,13 @@ namespace RunnerForex.Castle
                 return;
             }
 
+            FindGameplayRoot();
             EnsureSingleFomoBot();
         }
 
         private void Start()
         {
+            FindGameplayRoot();
             EnsureSingleFomoBot();
             EnsureSceneElements();
 
@@ -93,10 +93,17 @@ namespace RunnerForex.Castle
             }
 
             activeCamera = Camera.main;
-            if (activeCamera != null)
+        }
+
+        private void FindGameplayRoot()
+        {
+            if (gameplayRoot == null)
             {
-                runnerCamOriginalLocalPos = activeCamera.transform.localPosition;
-                runnerCamOriginalLocalRot = activeCamera.transform.localRotation;
+                GameObject rootObj = GameObject.Find("-- CASTLE GAMEPLAY --");
+                if (rootObj != null)
+                {
+                    gameplayRoot = rootObj.transform;
+                }
             }
         }
 
@@ -110,8 +117,9 @@ namespace RunnerForex.Castle
                 if (runner == null) return;
             }
 
-            // Check if player has reached 1-2 meters before the golden doors
-            if (runner.transform.position.z >= walkTriggerZPosition)
+            // Check if player has reached 1-2 meters before the golden doors in track coordinate
+            float currentZ = runner.transform.parent != null ? runner.transform.localPosition.z : runner.transform.position.z;
+            if (currentZ >= walkTriggerZPosition)
             {
                 hasTransitionedToWalk = true;
                 StartCoroutine(WalkToDoorAndTransitionRoutine());
@@ -123,7 +131,6 @@ namespace RunnerForex.Castle
         /// </summary>
         public void EnsureSingleFomoBot()
         {
-            // Disable rear chaser bot if present
             if (rearChaserBot != null)
             {
                 rearChaserBot.SetActive(false);
@@ -135,7 +142,6 @@ namespace RunnerForex.Castle
                 rearObj.SetActive(false);
             }
 
-            // Search all bots to ensure only the front patrol bot is active
             FomoBot[] allBots = Object.FindObjectsByType<FomoBot>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (var bot in allBots)
             {
@@ -146,7 +152,6 @@ namespace RunnerForex.Castle
                 if (bName.Contains("rear") || vName.Contains("rear") || bot.behaviorType == FomoBot.BotBehaviorType.RearChaser)
                 {
                     bot.gameObject.SetActive(false);
-                    Debug.Log("[CastleSequenceController] Deactivated rear FOMO bot: " + bot.gameObject.name);
                 }
                 else if (bName.Contains("front") || vName.Contains("castle guard") || bot.behaviorType == FomoBot.BotBehaviorType.FrontPatrolCharge)
                 {
@@ -157,10 +162,13 @@ namespace RunnerForex.Castle
         }
 
         /// <summary>
-        /// Automatically finds or dynamically builds any missing scene elements for the Castle flow.
+        /// Automatically finds or dynamically builds any missing scene elements for the Castle flow,
+        /// properly parenting them under -- CASTLE GAMEPLAY -- so they align with the castle diorama.
         /// </summary>
         private void EnsureSceneElements()
         {
+            FindGameplayRoot();
+
             // 1. Screen Fade Overlay
             if (fadeCanvasGroup == null)
             {
@@ -195,7 +203,7 @@ namespace RunnerForex.Castle
                 }
             }
 
-            // 2. Golden Doors
+            // 2. Golden Doors (at local Z = doorZPosition)
             if (goldenDoorsTransform == null)
             {
                 GameObject gdObj = GameObject.Find("GoldenDoors");
@@ -209,23 +217,22 @@ namespace RunnerForex.Castle
                 }
             }
 
-            // Cache door wings
             if (goldenDoorsTransform != null && (leftDoorWing == null || rightDoorWing == null))
             {
                 foreach (Transform child in goldenDoorsTransform.GetComponentsInChildren<Transform>(true))
                 {
-                    if (child.name.Contains("Door_01") || child.name.Contains("Door_Left") || child.name.Contains("DoorLeft"))
+                    if (child.name.Contains("Door_Left") || child.name.Contains("DoorLeft") || child.name.Contains("Door_01"))
                     {
                         leftDoorWing = child;
                     }
-                    else if (child.name.Contains("Door_02") || child.name.Contains("Door_Right") || child.name.Contains("DoorRight"))
+                    else if (child.name.Contains("Door_Right") || child.name.Contains("DoorRight") || child.name.Contains("Door_02"))
                     {
                         rightDoorWing = child;
                     }
                 }
             }
 
-            // 3. Computer Lane & Chair
+            // 3. Computer Room Lane & Chair
             if (chairSeatTransform == null)
             {
                 GameObject chairObj = GameObject.Find("SM_Prop_Chair_Fancy_01");
@@ -244,12 +251,13 @@ namespace RunnerForex.Castle
                 if (laneStartObj == null)
                 {
                     laneStartObj = new GameObject("ComputerLaneStartPoint");
-                    laneStartObj.transform.position = new Vector3(0f, 0.15f, 66f);
+                    if (gameplayRoot != null) laneStartObj.transform.SetParent(gameplayRoot, false);
+                    laneStartObj.transform.localPosition = new Vector3(0f, 0.15f, 66f);
                 }
                 computerLaneStartPoint = laneStartObj.transform;
             }
 
-            // 4. Lottery Box & Portal
+            // 4. Lottery Box & Portal (at local X = 1.6, Y = 0, Z = 74.5)
             if (lotteryBoxTransform == null)
             {
                 GameObject boxObj = GameObject.Find("LotteryBox");
@@ -281,8 +289,9 @@ namespace RunnerForex.Castle
                 if (viewObj == null)
                 {
                     viewObj = new GameObject("LotteryBoxCameraView");
-                    viewObj.transform.position = new Vector3(0.4f, 1.25f, 72.8f);
-                    viewObj.transform.rotation = Quaternion.Euler(12f, 25f, 0f);
+                    if (gameplayRoot != null) viewObj.transform.SetParent(gameplayRoot, false);
+                    viewObj.transform.localPosition = new Vector3(0.4f, 1.25f, 72.8f);
+                    viewObj.transform.localRotation = Quaternion.Euler(12f, 25f, 0f);
                 }
                 lotteryBoxCameraView = viewObj.transform;
             }
@@ -306,12 +315,13 @@ namespace RunnerForex.Castle
             }
         }
 
-        private Transform CreateGoldenDoors(Vector3 worldPos)
+        private Transform CreateGoldenDoors(Vector3 localPos)
         {
             GameObject doorRoot = new GameObject("GoldenDoors");
-            doorRoot.transform.position = worldPos;
+            if (gameplayRoot != null) doorRoot.transform.SetParent(gameplayRoot, false);
+            doorRoot.transform.localPosition = localPos;
+            doorRoot.transform.localRotation = Quaternion.identity;
 
-            // Load Gold Walls material
             Material goldMat = Resources.Load<Material>("Gold Walls");
 #if UNITY_EDITOR
             if (goldMat == null)
@@ -347,7 +357,7 @@ namespace RunnerForex.Castle
             Destroy(archTop.GetComponent<Collider>());
             if (goldMat != null) archTop.GetComponent<Renderer>().sharedMaterial = goldMat;
 
-            // Door Left Wing (Pivots at -1.9f)
+            // Door Left Wing
             GameObject doorLeftPivot = new GameObject("Door_Left_Pivot");
             doorLeftPivot.transform.SetParent(doorRoot.transform, false);
             doorLeftPivot.transform.localPosition = new Vector3(-1.9f, 0f, 0f);
@@ -361,7 +371,7 @@ namespace RunnerForex.Castle
             if (goldMat != null) doorLMesh.GetComponent<Renderer>().sharedMaterial = goldMat;
             leftDoorWing = doorLeftPivot.transform;
 
-            // Door Right Wing (Pivots at +1.9f)
+            // Door Right Wing
             GameObject doorRightPivot = new GameObject("Door_Right_Pivot");
             doorRightPivot.transform.SetParent(doorRoot.transform, false);
             doorRightPivot.transform.localPosition = new Vector3(1.9f, 0f, 0f);
@@ -378,10 +388,12 @@ namespace RunnerForex.Castle
             return doorRoot.transform;
         }
 
-        private Transform CreateLotteryBox(Vector3 worldPos)
+        private Transform CreateLotteryBox(Vector3 localPos)
         {
             GameObject boxRoot = new GameObject("LotteryBox");
-            boxRoot.transform.position = worldPos;
+            if (gameplayRoot != null) boxRoot.transform.SetParent(gameplayRoot, false);
+            boxRoot.transform.localPosition = localPos;
+            boxRoot.transform.localRotation = Quaternion.identity;
 
             Material goldMat = Resources.Load<Material>("Gold Walls");
 #if UNITY_EDITOR
@@ -400,7 +412,7 @@ namespace RunnerForex.Castle
             Destroy(chestBase.GetComponent<Collider>());
             if (goldMat != null) chestBase.GetComponent<Renderer>().sharedMaterial = goldMat;
 
-            // Chest Lid (Rotates from rear edge: Z = -0.4f, Y = 0.7f)
+            // Chest Lid (Rotates from rear edge)
             GameObject lidPivot = new GameObject("LotteryBox_Lid");
             lidPivot.transform.SetParent(boxRoot.transform, false);
             lidPivot.transform.localPosition = new Vector3(0f, 0.7f, -0.4f);
@@ -432,7 +444,7 @@ namespace RunnerForex.Castle
             if (portalObj == null)
             {
                 portalObj = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                portalObj.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+                portalObj.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
                 portalObj.transform.localScale = new Vector3(2.5f, 0.05f, 2.5f);
                 Renderer r = portalObj.GetComponent<Renderer>();
                 r.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Standard"));
@@ -440,9 +452,17 @@ namespace RunnerForex.Castle
             }
 
             portalObj.name = "LotteryBoxPortal";
-            Vector3 spawnPos = boxParent != null ? boxParent.position + new Vector3(0f, 1.2f, 0f) : new Vector3(1.6f, 1.2f, 74.5f);
-            portalObj.transform.position = spawnPos;
-            portalObj.transform.rotation = Quaternion.identity;
+            if (boxParent != null)
+            {
+                portalObj.transform.SetParent(boxParent, false);
+                portalObj.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+            }
+            else if (gameplayRoot != null)
+            {
+                portalObj.transform.SetParent(gameplayRoot, false);
+                portalObj.transform.localPosition = new Vector3(1.6f, 1.2f, 74.5f);
+            }
+            portalObj.transform.localRotation = Quaternion.identity;
 
             BoxCollider col = portalObj.GetComponent<BoxCollider>();
             if (col == null) col = portalObj.AddComponent<BoxCollider>();
@@ -474,15 +494,15 @@ namespace RunnerForex.Castle
                 }
             }
 
-            // 2. Smoothly walk forward to the Golden Doors (doorZPosition = 63.5f)
-            float startZ = runner != null ? runner.transform.position.z : walkTriggerZPosition;
+            bool hasParent = runner != null && runner.transform.parent != null;
+            float startZ = hasParent ? runner.transform.localPosition.z : runner.transform.position.z;
             float targetZ = doorZPosition;
             float distance = Mathf.Max(0.1f, targetZ - startZ);
             float duration = distance / Mathf.Max(1f, walkSpeed);
             float elapsed = 0f;
 
-            Vector3 walkStartPos = runner != null ? runner.transform.position : new Vector3(0f, 0.15f, startZ);
-            Vector3 walkEndPos = new Vector3(0f, walkStartPos.y, targetZ);
+            Vector3 walkStartLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
+            Vector3 walkEndLocal = new Vector3(0f, walkStartLocal.y, targetZ);
 
             while (elapsed < duration)
             {
@@ -490,8 +510,16 @@ namespace RunnerForex.Castle
                 float t = Mathf.Clamp01(elapsed / duration);
                 if (runner != null)
                 {
-                    runner.transform.position = Vector3.Lerp(walkStartPos, walkEndPos, t);
-                    runner.transform.rotation = Quaternion.identity;
+                    if (hasParent)
+                    {
+                        runner.transform.localPosition = Vector3.Lerp(walkStartLocal, walkEndLocal, t);
+                        runner.transform.localRotation = Quaternion.identity;
+                    }
+                    else
+                    {
+                        runner.transform.position = Vector3.Lerp(walkStartLocal, walkEndLocal, t);
+                        runner.transform.rotation = Quaternion.identity;
+                    }
                 }
                 yield return null;
             }
@@ -504,22 +532,24 @@ namespace RunnerForex.Castle
             if (rightDoorWing != null) rightDoorWing.localRotation = Quaternion.Euler(0f, 85f, 0f);
 
             // Position player at entrance of computer lane
-            Vector3 laneStart = computerLaneStartPoint != null ? computerLaneStartPoint.position : new Vector3(0f, 0.15f, 66f);
             if (runner != null)
             {
-                runner.transform.position = laneStart;
-                runner.transform.rotation = Quaternion.identity;
+                if (hasParent)
+                {
+                    runner.transform.localPosition = new Vector3(0f, 0.15f, 66f);
+                    runner.transform.localRotation = Quaternion.identity;
+                }
+                else
+                {
+                    Vector3 laneStart = computerLaneStartPoint != null ? computerLaneStartPoint.position : new Vector3(0f, 0.15f, 66f);
+                    runner.transform.position = laneStart;
+                    runner.transform.rotation = Quaternion.identity;
+                }
+
                 if (runner.animator != null)
                 {
                     runner.animator.Play("Walk_BlendTree", 0, 0f);
                 }
-            }
-
-            // Reset camera to behind player
-            if (activeCamera != null && runner != null)
-            {
-                activeCamera.transform.position = runner.transform.position + new Vector3(0f, 2.5f, -4f);
-                activeCamera.transform.rotation = Quaternion.Euler(15f, 0f, 0f);
             }
 
             yield return new WaitForSeconds(0.2f);
@@ -536,12 +566,13 @@ namespace RunnerForex.Castle
         /// </summary>
         private IEnumerator WalkToComputerDeskRoutine()
         {
-            Vector3 deskWalkStart = runner != null ? runner.transform.position : new Vector3(0f, 0.15f, 66f);
-            Vector3 deskChairPos = chairSeatTransform != null ? chairSeatTransform.position : new Vector3(0f, 0.15f, 74.8f);
+            bool hasParent = runner != null && runner.transform.parent != null;
+            Vector3 deskWalkStartLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
+            Vector3 chairLocalPos = chairSeatTransform != null && hasParent ? chairSeatTransform.localPosition : (chairSeatTransform != null ? chairSeatTransform.position : new Vector3(0f, 0.15f, 74.8f));
 
             // Stop right in front of the chair
-            Vector3 walkTarget = new Vector3(0f, deskWalkStart.y, deskChairPos.z - 0.7f);
-            float dist = Mathf.Max(0.1f, walkTarget.z - deskWalkStart.z);
+            Vector3 walkTargetLocal = new Vector3(0f, deskWalkStartLocal.y, chairLocalPos.z - 0.7f);
+            float dist = Mathf.Max(0.1f, walkTargetLocal.z - deskWalkStartLocal.z);
             float walkTime = dist / Mathf.Max(1f, walkSpeed);
             float elapsed = 0f;
 
@@ -557,17 +588,25 @@ namespace RunnerForex.Castle
                 float t = Mathf.Clamp01(elapsed / walkTime);
                 if (runner != null)
                 {
-                    runner.transform.position = Vector3.Lerp(deskWalkStart, walkTarget, t);
-                    runner.transform.rotation = Quaternion.identity;
+                    if (hasParent)
+                    {
+                        runner.transform.localPosition = Vector3.Lerp(deskWalkStartLocal, walkTargetLocal, t);
+                        runner.transform.localRotation = Quaternion.identity;
+                    }
+                    else
+                    {
+                        runner.transform.position = Vector3.Lerp(deskWalkStartLocal, walkTargetLocal, t);
+                        runner.transform.rotation = Quaternion.identity;
+                    }
                 }
                 yield return null;
             }
 
             // Align into chair seat
             float alignElapsed = 0f;
-            Vector3 alignStart = runner != null ? runner.transform.position : walkTarget;
-            Quaternion alignStartRot = runner != null ? runner.transform.rotation : Quaternion.identity;
-            Quaternion targetChairRot = chairSeatTransform != null ? chairSeatTransform.rotation : Quaternion.identity;
+            Vector3 alignStartLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
+            Quaternion alignStartRot = hasParent ? runner.transform.localRotation : runner.transform.rotation;
+            Quaternion targetChairRot = chairSeatTransform != null && hasParent ? chairSeatTransform.localRotation : (chairSeatTransform != null ? chairSeatTransform.rotation : Quaternion.identity);
 
             while (alignElapsed < 0.45f)
             {
@@ -575,8 +614,16 @@ namespace RunnerForex.Castle
                 float t = Mathf.SmoothStep(0f, 1f, alignElapsed / 0.45f);
                 if (runner != null)
                 {
-                    runner.transform.position = Vector3.Lerp(alignStart, deskChairPos, t);
-                    runner.transform.rotation = Quaternion.Slerp(alignStartRot, targetChairRot, t);
+                    if (hasParent)
+                    {
+                        runner.transform.localPosition = Vector3.Lerp(alignStartLocal, chairLocalPos, t);
+                        runner.transform.localRotation = Quaternion.Slerp(alignStartRot, targetChairRot, t);
+                    }
+                    else
+                    {
+                        runner.transform.position = Vector3.Lerp(alignStartLocal, chairLocalPos, t);
+                        runner.transform.rotation = Quaternion.Slerp(alignStartRot, targetChairRot, t);
+                    }
                 }
                 yield return null;
             }
@@ -708,10 +755,9 @@ namespace RunnerForex.Castle
             if (lotteryBoxPortal != null)
             {
                 lotteryBoxPortal.SetActive(true);
-                Vector3 portalBasePos = lotteryBoxTransform != null ? lotteryBoxTransform.position + new Vector3(0f, 0.4f, 0f) : new Vector3(1.6f, 0.4f, 74.5f);
-                Vector3 portalTargetPos = portalBasePos + new Vector3(0f, 0.9f, 0f);
+                Vector3 portalBasePos = lotteryBoxPortal.transform.position;
+                Vector3 portalTargetPos = portalBasePos + (gameplayRoot != null ? gameplayRoot.up * 0.9f : Vector3.up * 0.9f);
 
-                lotteryBoxPortal.transform.position = portalBasePos;
                 lotteryBoxPortal.transform.localScale = Vector3.one * 0.05f;
 
                 if (SoundManager.Instance != null && SoundManager.Instance.correctStrategySound != null)
@@ -745,11 +791,11 @@ namespace RunnerForex.Castle
             // Swoop camera to over-the-shoulder view framing player and portal
             if (activeCamera != null && runner != null)
             {
-                Vector3 otsCamPos = runner.transform.position + new Vector3(-1.2f, 2.2f, -2.8f);
-                Quaternion otsCamRot = Quaternion.Euler(15f, 25f, 0f);
-
                 Vector3 curCamPos = activeCamera.transform.position;
                 Quaternion curCamRot = activeCamera.transform.rotation;
+                Vector3 otsCamPos = runner.transform.position + (gameplayRoot != null ? -gameplayRoot.forward * 2.8f + gameplayRoot.up * 2.2f - gameplayRoot.right * 1.2f : new Vector3(-1.2f, 2.2f, -2.8f));
+                Quaternion otsCamRot = runner.transform.rotation * Quaternion.Euler(15f, 25f, 0f);
+
                 float otsElapsed = 0f;
                 while (otsElapsed < 0.9f)
                 {
@@ -771,9 +817,9 @@ namespace RunnerForex.Castle
                     runner.animator.CrossFadeInFixedTime("Walk_BlendTree", 0.2f);
                 }
 
-                Vector3 startPos = runner.transform.position;
-                Vector3 portalPos = lotteryBoxPortal != null ? lotteryBoxPortal.transform.position : (lotteryBoxTransform != null ? lotteryBoxTransform.position : startPos);
-                Vector3 stepTarget = new Vector3(portalPos.x, startPos.y, portalPos.z);
+                bool hasParent = runner.transform.parent != null;
+                Vector3 startLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
+                Vector3 portalTargetLocal = new Vector3(1.6f, startLocal.y, 74.5f);
 
                 float stepElapsed = 0f;
                 float stepDuration = 1.0f;
@@ -781,8 +827,15 @@ namespace RunnerForex.Castle
                 {
                     stepElapsed += Time.deltaTime;
                     float t = Mathf.Clamp01(stepElapsed / stepDuration);
-                    runner.transform.position = Vector3.Lerp(startPos, stepTarget, t);
-                    runner.transform.rotation = Quaternion.Slerp(runner.transform.rotation, Quaternion.LookRotation(portalPos - startPos), t);
+                    if (hasParent)
+                    {
+                        runner.transform.localPosition = Vector3.Lerp(startLocal, portalTargetLocal, t);
+                        runner.transform.localRotation = Quaternion.Slerp(runner.transform.localRotation, Quaternion.Euler(0f, 45f, 0f), t);
+                    }
+                    else
+                    {
+                        runner.transform.position = Vector3.Lerp(startLocal, portalTargetLocal, t);
+                    }
                     yield return null;
                 }
             }

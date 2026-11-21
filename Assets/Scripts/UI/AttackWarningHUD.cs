@@ -143,7 +143,7 @@ public class AttackWarningHUD : MonoBehaviour
         dodgedRt.sizeDelta = new Vector2(600f, 90f);
 
         dodgedText = dodgedObj.GetComponent<TextMeshProUGUI>();
-        dodgedText.text = "<color=#00FFCC>✔ DODGED!</color>";
+        dodgedText.text = "<color=#00FFCC>DODGED!</color>";
         dodgedText.fontSize = 46f;
         dodgedText.fontStyle = FontStyles.Bold;
         dodgedText.alignment = TextAlignmentOptions.Center;

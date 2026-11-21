@@ -76,9 +76,18 @@ public class RunnerController : MonoBehaviour
         currentLane = numberOfLanes / 2;
         targetXPosition = GetLaneXPosition(currentLane);
 
-        Vector3 startPos = transform.position;
-        startPos.x = targetXPosition;
-        transform.position = startPos;
+        if (transform.parent != null)
+        {
+            Vector3 startLocal = transform.localPosition;
+            startLocal.x = targetXPosition;
+            transform.localPosition = startLocal;
+        }
+        else
+        {
+            Vector3 startPos = transform.position;
+            startPos.x = targetXPosition;
+            transform.position = startPos;
+        }
 
         if (Camera.main != null)
         {
@@ -343,13 +352,16 @@ public class RunnerController : MonoBehaviour
 
         if (!enableLabyrinthTurns)
         {
-            float newX = Mathf.Lerp(transform.position.x, targetXPosition, laneSwitchSpeed * Time.deltaTime);
-            float moveX = newX - transform.position.x;
+            float currentX = transform.parent != null ? transform.localPosition.x : transform.position.x;
+            float newX = Mathf.Lerp(currentX, targetXPosition, laneSwitchSpeed * Time.deltaTime);
+            float moveX = newX - currentX;
 
-            Vector3 linearMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
+            Vector3 localMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
+            Vector3 worldMoveVector = transform.parent != null ? transform.parent.TransformDirection(localMoveVector) : localMoveVector;
+
             if (controller != null && controller.enabled)
             {
-                controller.Move(linearMoveVector);
+                controller.Move(worldMoveVector);
             }
             return;
         }
