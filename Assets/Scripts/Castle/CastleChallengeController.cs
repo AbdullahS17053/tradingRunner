@@ -276,8 +276,12 @@ namespace RunnerForex.Castle
             if (challengeCanvas != null) challengeCanvas.SetActive(false);
             if (failureModal != null) failureModal.SetActive(false);
 
-            // Unfreeze player, stand up, unlock portal
-            if (computerTrigger != null)
+            // Stand up, cinematic lottery box opens & portal unlocks
+            if (CastleSequenceController.Instance != null)
+            {
+                CastleSequenceController.Instance.PlayLotteryBoxPortalCinematicSequence();
+            }
+            else if (computerTrigger != null)
             {
                 computerTrigger.PlayerStandUpAndUnlockPortal(exitPortal);
             }
@@ -312,8 +316,12 @@ namespace RunnerForex.Castle
             if (challengeCanvas != null) challengeCanvas.SetActive(false);
             if (victoryModal != null) victoryModal.SetActive(false);
 
-            // 3. Player stands up and exit portal unlocks
-            if (computerTrigger != null)
+            // 3. Cinematic Lottery Box preview, portal spawn, and player continues to next level
+            if (CastleSequenceController.Instance != null)
+            {
+                CastleSequenceController.Instance.PlayLotteryBoxPortalCinematicSequence();
+            }
+            else if (computerTrigger != null)
             {
                 computerTrigger.PlayerStandUpAndUnlockPortal(exitPortal);
             }

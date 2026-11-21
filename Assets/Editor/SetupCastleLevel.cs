@@ -13,6 +13,29 @@ public class SetupCastleLevel : EditorWindow
         ExecuteSetup();
     }
 
+    [MenuItem("Tools/Setup Castle Sequence (Doors, Lottery Box, Portal)")]
+    public static void EnhanceCastleSequenceMenu()
+    {
+        var scene = EditorSceneManager.GetActiveScene();
+        if (scene.name != "Castle level" && !scene.path.Contains("Castle level"))
+        {
+            Debug.Log("[SetupCastleLevel] Active scene is not Castle level.");
+            return;
+        }
+
+        GameObject rearBot = GameObject.Find("FomoBot_RearChaser");
+        if (rearBot != null) rearBot.SetActive(false);
+
+        GameObject seqObj = GameObject.Find("CastleSequenceController");
+        if (seqObj == null) seqObj = new GameObject("CastleSequenceController");
+        CastleSequenceController seq = seqObj.GetComponent<CastleSequenceController>();
+        if (seq == null) seq = seqObj.AddComponent<CastleSequenceController>();
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("[SetupCastleLevel] Enhanced Castle Sequence setup saved to scene.");
+    }
+
     public static void ExecuteSetup()
     {
         var scene = EditorSceneManager.GetActiveScene();

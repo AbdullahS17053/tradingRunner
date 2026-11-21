@@ -22,6 +22,10 @@ namespace RunnerForex.Castle
         private void OnTriggerEnter(Collider other)
         {
             if (hasTriggered) return;
+            if (CastleSequenceController.Instance != null && (CastleSequenceController.Instance.isSequenceRunning || CastleSequenceController.Instance.hasTransitionedToWalk))
+            {
+                return; // Handled by CastleSequenceController
+            }
 
             if (other.CompareTag("Player"))
             {
