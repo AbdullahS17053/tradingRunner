@@ -58,12 +58,15 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        Time.timeScale = 1.0f;
+        Time.fixedDeltaTime = 0.02f;
+
         if (isLoopingRun)
         {
             takeProfit = carryOverTakeProfit;
             distanceRun = carryOverDistance;
             correctTrades = carryOverTrades;
-            currentSpeedMultiplier = Mathf.Max(1f, carryOverSpeedMultiplier);
+            currentSpeedMultiplier = 1.0f; // Start fresh at calibrated base speed in every new world!
         }
         else
         {
@@ -71,6 +74,7 @@ public class GameManager : MonoBehaviour
             carryOverDistance = 0f;
             carryOverTrades = 0;
             carryOverSpeedMultiplier = 1f;
+            currentSpeedMultiplier = 1.0f;
         }
 
         UpdateTradesUI();
@@ -169,6 +173,8 @@ public class GameManager : MonoBehaviour
         carryOverDistance = 0f;
         carryOverTrades = 0;
         carryOverSpeedMultiplier = 1f;
+        currentSpeedMultiplier = 1f;
+        PortalTrigger.ResetLevelBag();
 
         if (RunnerController.Instance != null)
         {
@@ -209,13 +215,21 @@ public class GameManager : MonoBehaviour
 
     public void RestartGame()
     {
+        isLoopingRun = false;
+        carryOverTakeProfit = 0;
+        carryOverDistance = 0f;
+        carryOverTrades = 0;
+        carryOverSpeedMultiplier = 1f;
+        currentSpeedMultiplier = 1f;
+        PortalTrigger.ResetLevelBag();
+        Time.timeScale = 1f;
+
         if (LevelLoader.Instance != null)
         {
             LevelLoader.Instance.RestartLevel();
         }
         else
         {
-            Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
     }

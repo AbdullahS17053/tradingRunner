@@ -15,9 +15,39 @@ namespace RunnerForex.Castle
 
         [Header("UI Panels & Screens")]
         public GameObject challengeCanvas;
+        public GameObject mainChallengePanel;
         public GameObject feedbackModal;
         public GameObject victoryModal;
         public GameObject failureModal;
+
+        public GameObject GetMainChallengePanel()
+        {
+            if (mainChallengePanel != null) return mainChallengePanel;
+
+            // Search all active and inactive transforms in loaded scenes
+            Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+            foreach (Transform t in allTransforms)
+            {
+                if (t != null && t.gameObject.name == "MainChallengePanel" && t.gameObject.scene.isLoaded)
+                {
+                    mainChallengePanel = t.gameObject;
+                    return mainChallengePanel;
+                }
+            }
+
+            GameObject hud = GameObject.Find("CastleGameplayHUD");
+            if (hud != null)
+            {
+                Transform found = hud.transform.Find("MainChallengePanel");
+                if (found != null)
+                {
+                    mainChallengePanel = found.gameObject;
+                    return mainChallengePanel;
+                }
+            }
+
+            return null;
+        }
 
         [Header("Challenge UI Elements")]
         public TextMeshProUGUI pairTimeframeText;
@@ -28,6 +58,14 @@ namespace RunnerForex.Castle
         [Header("Special Banners")]
         public GameObject newsSpreadBanner;   // Challenge 24
         public GameObject riskWarningBanner;  // Challenge 27
+
+        [Header("30 Candlestick Pattern Card & Movement Animation")]
+        public GameObject activePatternCardContainer;
+        public Image activePatternCardImage;
+        public TextMeshProUGUI activePatternTitleText;
+        public TextMeshProUGUI activePatternMoveText;
+        public ForexPatternMovementAnimator activePatternAnimator;
+        public Button openCodexButton;
 
         [Header("Action Buttons")]
         public Button buyButton;
@@ -74,6 +112,8 @@ namespace RunnerForex.Castle
                 Destroy(gameObject);
                 return;
             }
+
+            CastleSequenceController.EnsureInstanceExists();
         }
 
         private void Start()
@@ -89,6 +129,8 @@ namespace RunnerForex.Castle
             if (leaveWithoutRewardButton != null) leaveWithoutRewardButton.onClick.AddListener(OnLeaveWithoutRewardClicked);
 
             if (challengeCanvas != null) challengeCanvas.SetActive(false);
+            GameObject panel = GetMainChallengePanel();
+            if (panel != null) panel.SetActive(false);
             if (feedbackModal != null) feedbackModal.SetActive(false);
             if (victoryModal != null) victoryModal.SetActive(false);
             if (failureModal != null) failureModal.SetActive(false);
@@ -113,6 +155,16 @@ namespace RunnerForex.Castle
         public void StartCastleChallengeSession()
         {
             if (challengeCanvas != null) challengeCanvas.SetActive(true);
+            GameObject panel = GetMainChallengePanel();
+            if (panel != null)
+            {
+                panel.SetActive(true);
+                Debug.Log("[CastleChallengeController] MainChallengePanel successfully enabled!");
+            }
+            else
+            {
+                Debug.LogWarning("[CastleChallengeController] MainChallengePanel could not be found!");
+            }
 
             remainingTimer = totalTimerDuration;
             isTimerRunning = true;
@@ -155,6 +207,31 @@ namespace RunnerForex.Castle
             if (failureModal != null) failureModal.SetActive(false);
             if (victoryModal != null) victoryModal.SetActive(false);
 
+            EnsurePatternCardUI();
+
+            ForexPatternInfo pInfo = ForexPatternDatabase.GetPattern(cur.patternId);
+            if (pInfo != null)
+            {
+                if (activePatternCardImage != null)
+                {
+                    Sprite sp = pInfo.GetSprite();
+                    if (sp != null) activePatternCardImage.sprite = sp;
+                }
+                if (activePatternTitleText != null)
+                {
+                    activePatternTitleText.text = pInfo.DisplayTitle;
+                }
+                if (activePatternMoveText != null)
+                {
+                    activePatternMoveText.text = $"MOVE: {pInfo.moveName.ToUpper()}";
+                    activePatternMoveText.color = pInfo.BiasColor;
+                }
+                if (activePatternAnimator != null)
+                {
+                    activePatternAnimator.animationType = pInfo.animationType;
+                }
+            }
+
             if (pairTimeframeText != null)
             {
                 pairTimeframeText.text = $"{cur.pair} · {cur.timeframe}";
@@ -181,6 +258,121 @@ namespace RunnerForex.Castle
             SetButtonsInteractable(true);
         }
 
+        public void LoadSpecificPatternChallenge(int patternId)
+        {
+            StartCastleChallengeSession();
+            var all = CastleChallengeDatabase.GetAllChallenges();
+            CastleChallenge specific = all.Find(c => c.patternId == patternId);
+            if (specific != null)
+            {
+                activeFiveChallenges.Clear();
+                activeFiveChallenges.Add(specific);
+                currentChallengeIndex = 0;
+                DisplayCurrentChallenge();
+            }
+        }
+
+        public void EnsurePatternCardUI()
+        {
+            GameObject panel = GetMainChallengePanel();
+            if (panel == null) return;
+
+            if (openCodexButton == null)
+            {
+                Transform foundBtn = panel.transform.Find("OpenCodexButton");
+                if (foundBtn != null)
+                {
+                    openCodexButton = foundBtn.GetComponent<Button>();
+                }
+                else
+                {
+                    GameObject btnObj = new GameObject("OpenCodexButton", typeof(RectTransform), typeof(Image), typeof(Button));
+                    btnObj.transform.SetParent(panel.transform, false);
+                    RectTransform brt = btnObj.GetComponent<RectTransform>();
+                    brt.anchoredPosition = new Vector2(280, 605);
+                    brt.sizeDelta = new Vector2(220, 36);
+                    Image bImg = btnObj.GetComponent<Image>();
+                    bImg.color = new Color(0.1f, 0.45f, 0.9f, 0.9f);
+                    openCodexButton = btnObj.GetComponent<Button>();
+
+                    GameObject btnTxtObj = new GameObject("CodexText", typeof(RectTransform), typeof(TextMeshProUGUI));
+                    btnTxtObj.transform.SetParent(btnObj.transform, false);
+                    RectTransform btrt = btnTxtObj.GetComponent<RectTransform>();
+                    btrt.anchorMin = Vector2.zero;
+                    btrt.anchorMax = Vector2.one;
+                    btrt.sizeDelta = Vector2.zero;
+                    TextMeshProUGUI bt = btnTxtObj.GetComponent<TextMeshProUGUI>();
+                    bt.text = "📖 30 PATTERNS";
+                    bt.fontSize = 17;
+                    bt.fontStyle = FontStyles.Bold;
+                    bt.alignment = TextAlignmentOptions.Center;
+                    bt.color = Color.white;
+                }
+
+                if (openCodexButton != null)
+                {
+                    openCodexButton.onClick.RemoveAllListeners();
+                    openCodexButton.onClick.AddListener(() => ForexPatternsPanel.OpenPanel());
+                }
+            }
+
+            if (activePatternCardContainer == null)
+            {
+                Transform foundCont = panel.transform.Find("ActivePatternCardContainer");
+                if (foundCont != null)
+                {
+                    activePatternCardContainer = foundCont.gameObject;
+                    activePatternCardImage = foundCont.Find("CardImage")?.GetComponent<Image>();
+                    activePatternTitleText = foundCont.Find("TitleText")?.GetComponent<TextMeshProUGUI>();
+                    activePatternMoveText = foundCont.Find("MoveText")?.GetComponent<TextMeshProUGUI>();
+                    activePatternAnimator = activePatternCardImage?.GetComponent<ForexPatternMovementAnimator>();
+                }
+                else
+                {
+                    GameObject contObj = new GameObject("ActivePatternCardContainer", typeof(RectTransform), typeof(Image));
+                    contObj.transform.SetParent(panel.transform, false);
+                    RectTransform crt = contObj.GetComponent<RectTransform>();
+                    crt.anchoredPosition = new Vector2(0, 485);
+                    crt.sizeDelta = new Vector2(140, 165);
+                    Image cBg = contObj.GetComponent<Image>();
+                    cBg.color = new Color(0.04f, 0.07f, 0.16f, 0.95f);
+                    activePatternCardContainer = contObj;
+
+                    // Title
+                    GameObject ptObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
+                    ptObj.transform.SetParent(contObj.transform, false);
+                    RectTransform ptrt = ptObj.GetComponent<RectTransform>();
+                    ptrt.anchoredPosition = new Vector2(0, 68);
+                    ptrt.sizeDelta = new Vector2(130, 24);
+                    activePatternTitleText = ptObj.GetComponent<TextMeshProUGUI>();
+                    activePatternTitleText.fontSize = 12;
+                    activePatternTitleText.fontStyle = FontStyles.Bold;
+                    activePatternTitleText.alignment = TextAlignmentOptions.Center;
+                    activePatternTitleText.color = new Color(0f, 0.95f, 1f);
+
+                    // Card Image
+                    GameObject imgObj = new GameObject("CardImage", typeof(RectTransform), typeof(Image));
+                    imgObj.transform.SetParent(contObj.transform, false);
+                    RectTransform irt = imgObj.GetComponent<RectTransform>();
+                    irt.anchoredPosition = new Vector2(0, 2);
+                    irt.sizeDelta = new Vector2(100, 105);
+                    activePatternCardImage = imgObj.GetComponent<Image>();
+                    activePatternAnimator = imgObj.AddComponent<ForexPatternMovementAnimator>();
+
+                    // Move Text
+                    GameObject mtObj = new GameObject("MoveText", typeof(RectTransform), typeof(TextMeshProUGUI));
+                    mtObj.transform.SetParent(contObj.transform, false);
+                    RectTransform mtrt = mtObj.GetComponent<RectTransform>();
+                    mtrt.anchoredPosition = new Vector2(0, -66);
+                    mtrt.sizeDelta = new Vector2(130, 22);
+                    activePatternMoveText = mtObj.GetComponent<TextMeshProUGUI>();
+                    activePatternMoveText.fontSize = 11;
+                    activePatternMoveText.fontStyle = FontStyles.Bold;
+                    activePatternMoveText.alignment = TextAlignmentOptions.Center;
+                }
+            }
+        }
+
         private void OnActionSelected(TradeAction chosenAction)
         {
             if (isAnswering) return;
@@ -197,6 +389,11 @@ namespace RunnerForex.Castle
 
             if (isCorrect)
             {
+                if (activePatternAnimator != null)
+                {
+                    activePatternAnimator.PlayBurstAnimation();
+                }
+
                 if (SoundManager.Instance != null)
                 {
                     if (correctSound != null) SoundManager.Instance.PlaySFX(correctSound);
@@ -281,6 +478,8 @@ namespace RunnerForex.Castle
         private void OnLeaveWithoutRewardClicked()
         {
             if (challengeCanvas != null) challengeCanvas.SetActive(false);
+            GameObject panel = GetMainChallengePanel();
+            if (panel != null) panel.SetActive(false);
             if (failureModal != null) failureModal.SetActive(false);
 
             // Stand up, cinematic lottery box opens & portal unlocks
@@ -321,6 +520,8 @@ namespace RunnerForex.Castle
             yield return new WaitForSeconds(2.5f);
 
             if (challengeCanvas != null) challengeCanvas.SetActive(false);
+            GameObject panel = GetMainChallengePanel();
+            if (panel != null) panel.SetActive(false);
             if (victoryModal != null) victoryModal.SetActive(false);
 
             // 3. Cinematic Lottery Box preview, portal spawn, and player continues to next level

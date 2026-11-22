@@ -12,13 +12,17 @@ public class PowerUpHUD : MonoBehaviour
         {
             if (_instance == null)
             {
-                _instance = Object.FindAnyObjectByType<PowerUpHUD>();
+                _instance = Object.FindAnyObjectByType<PowerUpHUD>(FindObjectsInactive.Include);
                 if (_instance == null)
                 {
                     GameObject go = new GameObject("PowerUpHUD");
                     _instance = go.AddComponent<PowerUpHUD>();
                     DontDestroyOnLoad(go);
                 }
+            }
+            if (_instance != null && !_instance.gameObject.activeSelf)
+            {
+                _instance.gameObject.SetActive(true);
             }
             return _instance;
         }
@@ -251,7 +255,26 @@ public class PowerUpHUD : MonoBehaviour
 
     private void CreateAnnouncementToast(string text, Color bannerColor)
     {
-        Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+        if (!gameObject.activeSelf)
+        {
+            gameObject.SetActive(true);
+        }
+
+        Canvas canvas = null;
+        Canvas[] allCanvases = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        foreach (var c in allCanvases)
+        {
+            if (c != null && c.isActiveAndEnabled && c.gameObject.activeInHierarchy)
+            {
+                if (c.name.Contains("HUD") || c.name.Contains("Gameplay"))
+                {
+                    canvas = c;
+                    break;
+                }
+                if (canvas == null) canvas = c;
+            }
+        }
+
         if (canvas == null) return;
 
         if (activeToastObj != null)
@@ -261,6 +284,7 @@ public class PowerUpHUD : MonoBehaviour
 
         activeToastObj = new GameObject("AnnouncementToast", typeof(RectTransform), typeof(CanvasGroup));
         activeToastObj.transform.SetParent(canvas.transform, false);
+        activeToastObj.SetActive(true);
 
         RectTransform rt = activeToastObj.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.82f);
@@ -307,7 +331,10 @@ public class PowerUpHUD : MonoBehaviour
     {
         public void StartAnimation(CanvasGroup cg)
         {
-            StartCoroutine(ToastAnimationRoutine(cg));
+            if (gameObject.activeInHierarchy)
+            {
+                StartCoroutine(ToastAnimationRoutine(cg));
+            }
         }
 
         private IEnumerator ToastAnimationRoutine(CanvasGroup cg)

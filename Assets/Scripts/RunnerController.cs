@@ -58,10 +58,12 @@ public class RunnerController : MonoBehaviour
             return;
         }
         Instance = this;
+        isWarping = false;
     }
 
     private void Start()
     {
+        isWarping = false;
         initialScale = transform.localScale;
         transform.localScale = initialScale;
         controller = GetComponent<CharacterController>();
@@ -69,6 +71,10 @@ public class RunnerController : MonoBehaviour
         originalCenter = controller.center;
 
         if (animator == null) animator = GetComponentInChildren<Animator>();
+        if (animator != null)
+        {
+            animator.applyRootMotion = false;
+        }
 
         pathOrigin = new Vector3(0f, transform.position.y, transform.position.z);
         pathRotation = transform.rotation;

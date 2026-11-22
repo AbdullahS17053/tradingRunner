@@ -49,6 +49,7 @@ namespace RunnerForex.Castle
         [Header("Runtime State")]
         public bool hasTransitionedToWalk = false;
         public bool isSequenceRunning = false;
+        private bool computerTriggerReached = false;
 
         private Quaternion leftDoorInitialRot = Quaternion.identity;
         private Quaternion rightDoorInitialRot = Quaternion.identity;
@@ -59,34 +60,64 @@ namespace RunnerForex.Castle
         private Camera activeCamera;
         private Transform gameplayRoot;
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        private static void AutoInitInCastleScene()
+        public static CastleSequenceController EnsureInstanceExists()
         {
-            var activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
-            if (activeScene.name.IndexOf("Castle", System.StringComparison.OrdinalIgnoreCase) >= 0 || activeScene.buildIndex == 4)
+            if (Instance != null) return Instance;
+
+            CastleSequenceController existing = Object.FindFirstObjectByType<CastleSequenceController>();
+            if (existing != null)
             {
-                if (Instance == null)
-                {
-                    GameObject go = new GameObject("CastleSequenceController", typeof(CastleSequenceController));
-                    Debug.Log("[CastleSequenceController] Auto-initialized in Castle level scene.");
-                }
+                Instance = existing;
+                return Instance;
+            }
+
+            GameObject go = new GameObject("CastleSequenceController");
+            Instance = go.AddComponent<CastleSequenceController>();
+            Debug.Log("[CastleSequenceController] Instance created and registered.");
+            return Instance;
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void RegisterSceneLoadHandler()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoadedStatic;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoadedStatic;
+        }
+
+        private static void OnSceneLoadedStatic(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name.IndexOf("Castle", System.StringComparison.OrdinalIgnoreCase) >= 0 || scene.buildIndex == 4)
+            {
+                EnsureInstanceExists();
             }
         }
 
         private void Awake()
         {
-            if (Instance == null)
+            if (Instance == null || Instance == this)
             {
                 Instance = this;
             }
-            else if (Instance != this)
+            else
             {
                 Destroy(gameObject);
                 return;
             }
 
+            hasTransitionedToWalk = false;
+            isSequenceRunning = false;
+            computerTriggerReached = false;
+
             FindGameplayRoot();
             EnsureSingleFomoBot();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         private void Start()
@@ -164,12 +195,33 @@ namespace RunnerForex.Castle
             StartWalkAndDoorSequence();
         }
 
+        public void NotifyComputerTriggerReached()
+        {
+            computerTriggerReached = true;
+        }
+
         public void StartWalkAndDoorSequence()
         {
             if (hasTransitionedToWalk || isSequenceRunning) return;
             hasTransitionedToWalk = true;
             isSequenceRunning = true;
             Debug.Log("[CastleSequenceController] Walk sequence triggered! Walking towards golden doors.");
+
+            if (runner == null)
+            {
+                runner = RunnerController.Instance ?? FindFirstObjectByType<RunnerController>();
+            }
+
+            if (runner != null)
+            {
+                runner.enabled = false;
+                if (runner.animator != null)
+                {
+                    runner.animator.Play("Walk", 0, 0f);
+                    runner.animator.CrossFadeInFixedTime("Walk", 0.15f);
+                }
+            }
+
             StartCoroutine(WalkToDoorAndTransitionRoutine());
         }
 
@@ -203,7 +255,6 @@ namespace RunnerForex.Castle
                 else
                 {
                     bot.gameObject.SetActive(true);
-                    bot.movementSpeed = 3.0f;
                     bot.telegraphDistance = 22.0f;
                     bot.beamReach = 45.0f;
                     frontGuardBot = bot.gameObject;
@@ -227,8 +278,9 @@ namespace RunnerForex.Castle
             {
                 foreach (Collider c in goldenDoorsTransform.GetComponentsInChildren<Collider>(true))
                 {
+                    if (c == userWalkSequenceCollider) continue;
                     string n = c.gameObject.name.ToLower();
-                    if (n.Contains("door") || n.Contains("portcullis"))
+                    if (n.Contains("door") || n.Contains("portcullis") || n.Contains("gate") || n.Contains("wing"))
                     {
                         c.enabled = false;
                         Debug.Log("[CastleSequenceController] Disabled door obstacle collider: " + c.gameObject.name);
@@ -269,12 +321,14 @@ namespace RunnerForex.Castle
             // 0. Discover & Wire User Walk & Door Trigger Collider
             if (userWalkSequenceCollider == null)
             {
-                GameObject userObj = GameObject.Find("Trigger fow walk and get near so door openes and sequence continues for castel lavel ");
+                GameObject userObj = GameObject.Find("Trigger ");
+                if (userObj == null) userObj = GameObject.Find("Trigger");
+                if (userObj == null) userObj = GameObject.Find("Trigger fow walk and get near so door openes and sequence continues for castel lavel ");
                 if (userObj == null)
                 {
                     foreach (var col in Object.FindObjectsByType<Collider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
                     {
-                        if (col.gameObject.name.Contains("Trigger fow walk") || col.gameObject.name.Contains("door openes") || col.gameObject.name.Contains("sequence continues"))
+                        if (col.gameObject.name.StartsWith("Trigger") || col.gameObject.name.Contains("Trigger fow walk") || col.gameObject.name.Contains("door openes") || col.gameObject.name.Contains("sequence continues"))
                         {
                             userObj = col.gameObject;
                             userWalkSequenceCollider = col;
@@ -304,13 +358,30 @@ namespace RunnerForex.Castle
                 }
             }
 
-            // 1. Screen Fade Overlay
+            // 1. Screen Fade Overlay (kept static in hierarchy, disabled when clear)
             if (fadeCanvasGroup == null)
             {
                 GameObject existingFade = GameObject.Find("CastleScreenFadeCanvas");
+                if (existingFade == null) existingFade = GameObject.Find("CastleScreenFadeOverlay");
+                if (existingFade == null)
+                {
+                    GameObject hud = GameObject.Find("CastleGameplayHUD");
+                    if (hud != null)
+                    {
+                        Transform found = hud.transform.Find("CastleScreenFadeOverlay");
+                        if (found != null) existingFade = found.gameObject;
+                    }
+                }
+
                 if (existingFade != null)
                 {
-                    fadeCanvasGroup = existingFade.GetComponentInChildren<CanvasGroup>();
+                    fadeCanvasGroup = existingFade.GetComponentInChildren<CanvasGroup>(true);
+                    if (fadeCanvasGroup != null)
+                    {
+                        fadeCanvasGroup.alpha = 0f;
+                        fadeCanvasGroup.blocksRaycasts = false;
+                        fadeCanvasGroup.gameObject.SetActive(false);
+                    }
                 }
                 else
                 {
@@ -335,6 +406,8 @@ namespace RunnerForex.Castle
                     rt.sizeDelta = Vector2.zero;
                     Image img = blackImgObj.GetComponent<Image>();
                     img.color = Color.black;
+
+                    fadeCanvasObj.SetActive(false);
                 }
             }
 
@@ -650,7 +723,8 @@ namespace RunnerForex.Castle
                 runner.enabled = false;
                 if (runner.animator != null)
                 {
-                    runner.animator.CrossFadeInFixedTime("Walk_BlendTree", 0.2f);
+                    runner.animator.Play("Walk", 0, 0f);
+                    runner.animator.CrossFadeInFixedTime("Walk", 0.15f);
                 }
             }
 
@@ -747,7 +821,8 @@ namespace RunnerForex.Castle
 
                 if (runner.animator != null)
                 {
-                    runner.animator.Play("Walk_BlendTree", 0, 0f);
+                    runner.animator.Play("Walk", 0, 0f);
+                    runner.animator.CrossFadeInFixedTime("Walk", 0.15f);
                 }
             }
 
@@ -759,12 +834,15 @@ namespace RunnerForex.Castle
         }
 
         /// <summary>
-        /// Phase 3: Walking down computer lane to chair. Chest raycast detects distance to desk/chair.
-        /// When within <= 1.2m, player sits down in chair, camera shifts smoothly to computer monitor,
-        /// typing audio plays, and 5-question challenge UI opens.
+        /// Phase 3: Walking down computer lane to desk. Chest raycast or trigger detects distance to desk/chair.
+        /// When near (<= 1.25m or trigger touched), player stops and transitions to Idle right where he is,
+        /// without any sudden position jump.
+        /// Camera shifts smoothly to computer monitor, typing audio plays, and 5-question challenge UI opens.
         /// </summary>
         private IEnumerator WalkToComputerDeskRoutine()
         {
+            computerTriggerReached = false;
+
             if (runner == null)
             {
                 runner = RunnerController.Instance ?? FindFirstObjectByType<RunnerController>();
@@ -775,7 +853,8 @@ namespace RunnerForex.Castle
 
             if (runner != null && runner.animator != null)
             {
-                runner.animator.CrossFadeInFixedTime("Walk_BlendTree", 0.15f);
+                runner.animator.Play("Walk", 0, 0f);
+                runner.animator.CrossFadeInFixedTime("Walk", 0.15f);
             }
 
             bool deskReached = false;
@@ -786,6 +865,15 @@ namespace RunnerForex.Castle
             {
                 elapsedDeskWalk += Time.deltaTime;
 
+                if (runner != null && runner.animator != null)
+                {
+                    var stateInfo = runner.animator.GetCurrentAnimatorStateInfo(0);
+                    if (!stateInfo.IsName("Walk") && !stateInfo.IsName("Walk_BlendTree") && !deskReached)
+                    {
+                        runner.animator.Play("Walk", 0, 0f);
+                    }
+                }
+
                 if (runner != null && cc != null && cc.enabled)
                 {
                     Vector3 moveStep = (deskWalkDir * walkSpeed + Vector3.down * 9.8f) * Time.deltaTime;
@@ -793,11 +881,11 @@ namespace RunnerForex.Castle
                     runner.transform.rotation = Quaternion.LookRotation(deskWalkDir);
                 }
 
-                // Chest raycast forward towards desk / chair
+                // Chest raycast forward towards desk / chair (ignore triggers so only physical geometry is detected)
                 Vector3 chestOrigin = (runner != null) ? runner.transform.position + Vector3.up * 1.3f : Vector3.zero;
                 float detectedDist = float.MaxValue;
 
-                if (Physics.Raycast(chestOrigin, deskWalkDir, out RaycastHit hit, 10f))
+                if (Physics.Raycast(chestOrigin, deskWalkDir, out RaycastHit hit, 10f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
                 {
                     detectedDist = hit.distance;
                 }
@@ -813,43 +901,22 @@ namespace RunnerForex.Castle
                     }
                 }
 
-                // When within <= 1.2m of table/chair, stop and transition!
-                if (detectedDist <= 1.25f)
+                // When near table/chair or computer trigger reached, stop smoothly!
+                if (detectedDist <= 1.25f || computerTriggerReached)
                 {
                     deskReached = true;
-                    Debug.Log($"[CastleSequenceController] Chest raycast detected desk/chair at {detectedDist:F2}m! Seating player.");
+                    Debug.Log($"[CastleSequenceController] Desk reached (dist: {detectedDist:F2}m, trigger: {computerTriggerReached})! Stopping at current position in Idle without changing position.");
                 }
 
                 yield return null;
             }
 
-            // Smoothly align player into chair seat
-            if (runner != null && chairSeatTransform != null)
-            {
-                if (cc != null) cc.enabled = false;
-
-                Vector3 startPos = runner.transform.position;
-                Quaternion startRot = runner.transform.rotation;
-                float alignElapsed = 0f;
-                float alignDuration = 0.4f;
-
-                while (alignElapsed < alignDuration)
-                {
-                    alignElapsed += Time.deltaTime;
-                    float t = Mathf.SmoothStep(0f, 1f, alignElapsed / alignDuration);
-                    runner.transform.position = Vector3.Lerp(startPos, chairSeatTransform.position, t);
-                    runner.transform.rotation = Quaternion.Slerp(startRot, chairSeatTransform.rotation, t);
-                    yield return null;
-                }
-
-                runner.transform.position = chairSeatTransform.position;
-                runner.transform.rotation = chairSeatTransform.rotation;
-            }
-
-            // Play Sitting Pose animation
+            // Keep player right where he walked to in Idle animation (DO NOT change position or snap to chair)
             if (runner != null && runner.animator != null)
             {
-                runner.animator.Play("SittingPose", 0, 0f);
+                runner.animator.SetBool("GameStarted", false);
+                runner.animator.Play("Idle", 0, 0f);
+                runner.animator.CrossFadeInFixedTime("Idle", 0.15f);
             }
 
             // Swoop camera to computer screen
@@ -891,6 +958,18 @@ namespace RunnerForex.Castle
             {
                 CastleChallengeController.Instance.StartCastleChallengeSession();
             }
+            else
+            {
+                Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+                foreach (Transform t in allTransforms)
+                {
+                    if (t != null && t.gameObject.name == "MainChallengePanel" && t.gameObject.scene.isLoaded)
+                    {
+                        t.gameObject.SetActive(true);
+                        break;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -911,9 +990,29 @@ namespace RunnerForex.Castle
             }
 
             // 2. Hide quiz UI completely
-            if (CastleChallengeController.Instance != null && CastleChallengeController.Instance.challengeCanvas != null)
+            if (CastleChallengeController.Instance != null)
             {
-                CastleChallengeController.Instance.challengeCanvas.SetActive(false);
+                if (CastleChallengeController.Instance.challengeCanvas != null)
+                {
+                    CastleChallengeController.Instance.challengeCanvas.SetActive(false);
+                }
+                GameObject panel = CastleChallengeController.Instance.GetMainChallengePanel();
+                if (panel != null)
+                {
+                    panel.SetActive(false);
+                }
+            }
+            else
+            {
+                Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+                foreach (Transform t in allTransforms)
+                {
+                    if (t != null && t.gameObject.name == "MainChallengePanel" && t.gameObject.scene.isLoaded)
+                    {
+                        t.gameObject.SetActive(false);
+                        break;
+                    }
+                }
             }
 
             yield return new WaitForSeconds(0.3f);
@@ -999,11 +1098,10 @@ namespace RunnerForex.Castle
 
             yield return new WaitForSeconds(0.6f);
 
-            // 6. Player stands up from the chair
+            // 6. Player in Idle state facing lottery box
             if (runner != null && runner.animator != null)
             {
-                runner.animator.ResetTrigger("SitToStand");
-                runner.animator.SetTrigger("SitToStand");
+                runner.animator.Play("Idle", 0, 0f);
             }
 
             // Swoop camera to over-the-shoulder view framing player and portal
@@ -1077,6 +1175,11 @@ namespace RunnerForex.Castle
         {
             if (fadeCanvasGroup == null) yield break;
 
+            if (!fadeCanvasGroup.gameObject.activeSelf)
+            {
+                fadeCanvasGroup.gameObject.SetActive(true);
+            }
+
             fadeCanvasGroup.blocksRaycasts = (toAlpha > 0.5f);
             float elapsed = 0f;
             while (elapsed < duration)
@@ -1086,6 +1189,13 @@ namespace RunnerForex.Castle
                 yield return null;
             }
             fadeCanvasGroup.alpha = toAlpha;
+
+            if (toAlpha <= 0.05f)
+            {
+                fadeCanvasGroup.alpha = 0f;
+                fadeCanvasGroup.blocksRaycasts = false;
+                fadeCanvasGroup.gameObject.SetActive(false);
+            }
         }
     }
 }

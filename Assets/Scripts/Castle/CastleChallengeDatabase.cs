@@ -57,6 +57,7 @@ namespace RunnerForex.Castle
             CastleChallenge c = new CastleChallenge
             {
                 id = id,
+                patternId = id,
                 pair = pair,
                 timeframe = tf,
                 scenario = scenario,
@@ -69,6 +70,14 @@ namespace RunnerForex.Castle
                 showNewsBanner = news,
                 showRiskWarning = risk
             };
+
+            ForexPatternInfo pattern = ForexPatternDatabase.GetPattern(id);
+            if (pattern != null)
+            {
+                c.patternName = pattern.patternName;
+                c.moveName = pattern.moveName;
+                c.animationType = pattern.animationType;
+            }
 
             // Procedurally generate 12 candles leading up to the final pattern
             float range = res - sup;

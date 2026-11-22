@@ -35,11 +35,12 @@ namespace RunnerForex.Castle
 
         private void HandleTrigger(Collider other)
         {
-            if (other.CompareTag("Player") || other.GetComponent<RunnerController>() != null || other.GetComponentInParent<RunnerController>() != null)
+            if (other.CompareTag("Player") || other.GetComponent<RunnerController>() != null || other.GetComponentInParent<RunnerController>() != null || other is CharacterController)
             {
-                if (CastleSequenceController.Instance != null)
+                var controller = CastleSequenceController.EnsureInstanceExists();
+                if (controller != null)
                 {
-                    CastleSequenceController.Instance.OnPlayerInWalkTriggerStay();
+                    controller.OnPlayerInWalkTriggerStay();
                 }
             }
         }

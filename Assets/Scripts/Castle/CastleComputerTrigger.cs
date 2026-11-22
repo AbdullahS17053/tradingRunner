@@ -22,15 +22,17 @@ namespace RunnerForex.Castle
         private void OnTriggerEnter(Collider other)
         {
             if (hasTriggered) return;
-            if (CastleSequenceController.Instance != null && (CastleSequenceController.Instance.isSequenceRunning || CastleSequenceController.Instance.hasTransitionedToWalk))
+            var seq = CastleSequenceController.EnsureInstanceExists();
+            if (seq != null && (seq.isSequenceRunning || seq.hasTransitionedToWalk))
             {
+                seq.NotifyComputerTriggerReached();
                 return; // Handled by CastleSequenceController
             }
 
-            if (other.CompareTag("Player"))
+            if (other.CompareTag("Player") || other.GetComponent<RunnerController>() != null || other.GetComponentInParent<RunnerController>() != null)
             {
                 hasTriggered = true;
-                RunnerController runner = other.GetComponent<RunnerController>();
+                RunnerController runner = other.GetComponent<RunnerController>() ?? other.GetComponentInParent<RunnerController>() ?? RunnerController.Instance;
                 StartCoroutine(SitDownSequenceRoutine(runner));
             }
         }
@@ -47,31 +49,14 @@ namespace RunnerForex.Castle
                 GameManager.Instance.isTradingChallengeActive = true;
             }
 
-            // 2. Align player to chair seat
-            if (chairSeatTransform != null && runner != null)
-            {
-                Vector3 startPos = runner.transform.position;
-                Quaternion startRot = runner.transform.rotation;
-                float alignElapsed = 0f;
-                while (alignElapsed < 0.4f)
-                {
-                    alignElapsed += Time.deltaTime;
-                    float t = alignElapsed / 0.4f;
-                    runner.transform.position = Vector3.Lerp(startPos, chairSeatTransform.position, t);
-                    runner.transform.rotation = Quaternion.Slerp(startRot, chairSeatTransform.rotation, t);
-                    yield return null;
-                }
-                runner.transform.position = chairSeatTransform.position;
-                runner.transform.rotation = chairSeatTransform.rotation;
-            }
-
-            // 3. Play Sitting Pose animation
+            // 2. Keep player standing right where they triggered in Idle state (DO NOT suddenly change position)
             if (runner != null && runner.animator != null)
             {
-                runner.animator.Play("SittingPose", 0, 0f);
+                runner.animator.SetBool("GameStarted", false);
+                runner.animator.Play("Idle", 0, 0f);
             }
 
-            // 4. Camera Swoop to Computer Screen
+            // 3. Camera Swoop to Computer Screen
             activeCamera = Camera.main;
             if (activeCamera != null && computerCameraPosition != null)
             {
@@ -91,7 +76,7 @@ namespace RunnerForex.Castle
                 activeCamera.transform.rotation = computerCameraPosition.rotation;
             }
 
-            // 5. Play typing sounds
+            // 4. Play typing sounds
             if (computerAudioSource != null)
             {
                 if (typingSound != null) computerAudioSource.clip = typingSound;
@@ -104,7 +89,7 @@ namespace RunnerForex.Castle
                 }
             }
 
-            // 6. Launch Castle Challenge
+            // 5. Launch Castle Challenge
             if (CastleChallengeController.Instance != null)
             {
                 CastleChallengeController.Instance.computerTrigger = this;
@@ -126,11 +111,10 @@ namespace RunnerForex.Castle
 
             RunnerController runner = RunnerController.Instance;
 
-            // 1. Play Sit To Stand trigger
+            // 1. Keep Idle animation
             if (runner != null && runner.animator != null)
             {
-                runner.animator.ResetTrigger("SitToStand");
-                runner.animator.SetTrigger("SitToStand");
+                runner.animator.Play("Idle", 0, 0f);
             }
 
             // 2. Camera Swoop back to runner view

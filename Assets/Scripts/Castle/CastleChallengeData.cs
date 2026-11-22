@@ -34,6 +34,10 @@ namespace RunnerForex.Castle
     public class CastleChallenge
     {
         public int id;
+        public int patternId = 1;
+        public string patternName = "Doji";
+        public string moveName = "Meditate";
+        public PatternAnimationType animationType = PatternAnimationType.Meditate;
         public string pair;
         public string timeframe;
         public string scenario;

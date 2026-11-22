@@ -56,15 +56,25 @@ public class PortalTrigger : MonoBehaviour
             PowerUpHUD.Instance.ShowPortalAnnouncement("WARPING TO NEXT WORLD...");
         }
 
-        // 2. Preserve run stats across world teleportation
+        // 2. Preserve run stats across world teleportation (Score, Distance, Trades)
+        // Reset speed progression to 1.0f base speed so entering a new level never moves at abnormal hyper-speed!
         if (GameManager.Instance != null)
         {
             GameManager.isLoopingRun = true;
             GameManager.carryOverTakeProfit = GameManager.Instance.takeProfit;
             GameManager.carryOverDistance = GameManager.Instance.distanceRun;
             GameManager.carryOverTrades = GameManager.Instance.correctTrades;
-            GameManager.carryOverSpeedMultiplier = GameManager.Instance.currentSpeedMultiplier;
+            GameManager.carryOverSpeedMultiplier = 1.0f;
+            GameManager.Instance.currentSpeedMultiplier = 1.0f;
         }
+
+        // Clean up any active power-up effects (speed boost, slow-mo) before transitioning
+        if (PowerUpManager.Instance != null)
+        {
+            PowerUpManager.Instance.ResetAllPowerUps();
+        }
+        Time.timeScale = 1.0f;
+        Time.fixedDeltaTime = 0.02f;
 
         // 3. Play transition SFX
         if (SoundManager.Instance != null && SoundManager.Instance.correctStrategySound != null)
@@ -72,34 +82,13 @@ public class PortalTrigger : MonoBehaviour
             SoundManager.Instance.PlaySFX(SoundManager.Instance.correctStrategySound);
         }
 
-        // 4. Randomly select next world (excluding current world)
+        // 4. Randomly select next world from non-repeating world bag
         int nextScene = targetSceneIndex;
         if (nextScene < 0)
         {
             string currentSceneName = SceneManager.GetActiveScene().name;
             int currentIndex = SceneManager.GetActiveScene().buildIndex;
-
-            // Known build indices: 0 = Main (Cyberpunk/City), 2 = space world, 3 = Labyrinth World, 4 = Castle level
-            System.Collections.Generic.List<int> candidateScenes = new System.Collections.Generic.List<int>();
-
-            bool isCyberpunk = currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase) || currentSceneName.Equals("City", System.StringComparison.OrdinalIgnoreCase) || currentIndex == 0;
-            bool isSpace = currentSceneName.IndexOf("space", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 2;
-            bool isLabyrinth = currentSceneName.IndexOf("Labyrinth", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 3;
-            bool isCastle = currentSceneName.IndexOf("Castle", System.StringComparison.OrdinalIgnoreCase) >= 0 || currentIndex == 4;
-
-            if (!isCyberpunk) candidateScenes.Add(0); // City / Cyberpunk
-            if (!isSpace) candidateScenes.Add(2);     // space world
-            if (!isLabyrinth) candidateScenes.Add(3); // Labyrinth World
-            if (!isCastle) candidateScenes.Add(4);    // Castle level
-
-            if (candidateScenes.Count > 0)
-            {
-                nextScene = candidateScenes[Random.Range(0, candidateScenes.Count)];
-            }
-            else
-            {
-                nextScene = 0;
-            }
+            nextScene = GetNextDestinationScene(currentIndex, currentSceneName);
         }
 
         // 5. Smooth load through LevelLoader (fades to black then loads scene)
@@ -213,6 +202,74 @@ public class PortalTrigger : MonoBehaviour
             GameObject temp = new GameObject("TempPortal");
             var comp = temp.AddComponent<PortalTrigger>();
             comp.TriggerWorldTransition();
+        }
+    }
+
+    // Non-repeating world playlist / bag across all 4 gameplay levels:
+    // 0 = City, 2 = Space, 3 = Labyrinth, 4 = Castle
+    public static readonly int[] AllGameplayScenes = new int[] { 0, 2, 3, 4 };
+    private static System.Collections.Generic.List<int> unvisitedScenes = new System.Collections.Generic.List<int>();
+    private static int lastVisitedSceneIndex = -1;
+
+    public static void ResetLevelBag()
+    {
+        unvisitedScenes.Clear();
+        lastVisitedSceneIndex = -1;
+    }
+
+    public static int GetNextDestinationScene(int currentSceneIndex, string currentSceneName)
+    {
+        int resolvedCurrentIndex = currentSceneIndex;
+        if (resolvedCurrentIndex < 0 || resolvedCurrentIndex == 1) // 1 is MainMenu
+        {
+            if (currentSceneName.Equals("City", System.StringComparison.OrdinalIgnoreCase) || currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase)) resolvedCurrentIndex = 0;
+            else if (currentSceneName.IndexOf("space", System.StringComparison.OrdinalIgnoreCase) >= 0) resolvedCurrentIndex = 2;
+            else if (currentSceneName.IndexOf("labyrinth", System.StringComparison.OrdinalIgnoreCase) >= 0) resolvedCurrentIndex = 3;
+            else if (currentSceneName.IndexOf("castle", System.StringComparison.OrdinalIgnoreCase) >= 0) resolvedCurrentIndex = 4;
+            else resolvedCurrentIndex = 0;
+        }
+
+        // Remove the current scene from unvisited pool so we never repeat the current world
+        unvisitedScenes.RemoveAll(idx => idx == resolvedCurrentIndex);
+
+        // If pool is empty or only had current scene, refill with all gameplay scenes excluding current scene
+        if (unvisitedScenes.Count == 0)
+        {
+            System.Collections.Generic.List<int> refill = new System.Collections.Generic.List<int>(AllGameplayScenes);
+            refill.RemoveAll(idx => idx == resolvedCurrentIndex);
+
+            // If we have more than 1 option and lastVisitedSceneIndex is in the refill list,
+            // place it at the very back of the list to prevent 2-level ping-pong (e.g. Castle <-> Labyrinth)
+            if (lastVisitedSceneIndex >= 0 && refill.Contains(lastVisitedSceneIndex) && refill.Count > 1)
+            {
+                refill.Remove(lastVisitedSceneIndex);
+                ShuffleList(refill);
+                refill.Add(lastVisitedSceneIndex); // Append at the end so all other worlds are visited first!
+                unvisitedScenes = refill;
+            }
+            else
+            {
+                ShuffleList(refill);
+                unvisitedScenes = refill;
+            }
+        }
+
+        int next = unvisitedScenes[0];
+        unvisitedScenes.RemoveAt(0);
+        lastVisitedSceneIndex = resolvedCurrentIndex;
+        Debug.Log($"[PortalTrigger] World transition chosen: {resolvedCurrentIndex} -> {next}. Remaining in bag: {string.Join(",", unvisitedScenes)}");
+        return next;
+    }
+
+    private static void ShuffleList(System.Collections.Generic.List<int> list)
+    {
+        var rng = new System.Random((int)(System.DateTime.UtcNow.Ticks & 0x7FFFFFFF));
+        for (int i = list.Count - 1; i > 0; i--)
+        {
+            int r = rng.Next(i + 1);
+            int tmp = list[i];
+            list[i] = list[r];
+            list[r] = tmp;
         }
     }
 }

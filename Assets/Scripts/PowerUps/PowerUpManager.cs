@@ -246,6 +246,20 @@ public class PowerUpManager : MonoBehaviour
         postPowerUpCooldownTimer = 0f;
     }
 
+    public void ResetAllPowerUps()
+    {
+        ClearAllPowerUps();
+        Time.timeScale = 1.0f;
+        Time.fixedDeltaTime = 0.02f;
+        invulnerabilityGraceTimer = 0f;
+        postPowerUpCooldownTimer = 0f;
+        foreach (var kvp in attachedVFX)
+        {
+            if (kvp.Value != null) Destroy(kvp.Value);
+        }
+        attachedVFX.Clear();
+    }
+
     public bool ConsumeShield()
     {
         if (hasShield)
@@ -356,7 +370,7 @@ public class PowerUpManager : MonoBehaviour
         {
             GameObject instance = Instantiate(vfxPrefab, target);
             instance.transform.localPosition = GetVFXOffset(type, isSpaceship);
-            instance.transform.localRotation = (type == PowerUpType.SpeedBoost) ? Quaternion.Euler(0f, 180f, 0f) : Quaternion.identity;
+            instance.transform.localRotation = (type == PowerUpType.SpeedBoost) ? Quaternion.Euler(12f, 180f, 0f) : Quaternion.identity;
             instance.transform.localScale = GetVFXScale(type, isSpaceship);
 
             if (type == PowerUpType.SpeedBoost)
@@ -368,15 +382,35 @@ public class PowerUpManager : MonoBehaviour
                     main.scalingMode = ParticleSystemScalingMode.Hierarchy;
                     if (isSpaceship)
                     {
-                        main.startSizeMultiplier = 0.08f;
-                        main.startSizeYMultiplier = 0.08f;
-                        main.startSizeZMultiplier = 0.08f;
-                        main.startSpeedMultiplier = 2.0f;
-                        main.startLifetimeMultiplier = 0.22f;
+                        main.startSize = 0.012f;
+                        main.startSizeMultiplier = 0.012f;
+                        main.startSizeY = 0.012f;
+                        main.startSizeYMultiplier = 0.012f;
+                        main.startSizeZ = 0.012f;
+                        main.startSizeZMultiplier = 0.012f;
+                        main.startSpeed = 0.8f;
+                        main.startSpeedMultiplier = 0.8f;
+                        main.startLifetime = 0.08f;
+                        main.startLifetimeMultiplier = 0.08f;
+
+                        ParticleSystemRenderer psRenderer = ps.GetComponent<ParticleSystemRenderer>();
+                        if (psRenderer != null)
+                        {
+                            psRenderer.maxParticleSize = 0.03f;
+                        }
                     }
                     else
                     {
                         if (main.startSizeMultiplier > 0.3f) main.startSizeMultiplier = 0.2f;
+                    }
+                }
+
+                if (isSpaceship)
+                {
+                    SpaceshipController ship = FindObjectOfType<SpaceshipController>();
+                    if (ship != null && ship.thrusterFXRoot != null)
+                    {
+                        ship.thrusterFXRoot.transform.localScale = Vector3.one * 1.6f;
                     }
                 }
             }
@@ -393,6 +427,15 @@ public class PowerUpManager : MonoBehaviour
 
     private void RemoveVFX(PowerUpType type)
     {
+        if (type == PowerUpType.SpeedBoost)
+        {
+            SpaceshipController ship = FindObjectOfType<SpaceshipController>();
+            if (ship != null && ship.thrusterFXRoot != null)
+            {
+                ship.thrusterFXRoot.transform.localScale = Vector3.one;
+            }
+        }
+
         if (attachedVFX.TryGetValue(type, out GameObject vfxObj) && vfxObj != null)
         {
             Destroy(vfxObj);
@@ -444,7 +487,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return new Vector3(0f, 0.2f, 0f);
-                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.05f, -1.05f);
+                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.05f, -0.95f);
                 case PowerUpType.CoinMagnet: return new Vector3(0f, 0.4f, 0f);
                 case PowerUpType.DoubleTP: return new Vector3(0f, 0.6f, 0f);
                 case PowerUpType.WeaponUpgrade: return new Vector3(0f, 0.2f, 1.2f);
@@ -476,7 +519,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return new Vector3(2.4f, 1.5f, 3.2f);
-                case PowerUpType.SpeedBoost: return new Vector3(0.08f, 0.08f, 0.12f);
+                case PowerUpType.SpeedBoost: return new Vector3(0.015f, 0.015f, 0.025f);
                 case PowerUpType.CoinMagnet: return Vector3.one * 1.8f;
                 case PowerUpType.DoubleTP: return Vector3.one * 1.6f;
                 case PowerUpType.WeaponUpgrade: return Vector3.one * 1.5f;

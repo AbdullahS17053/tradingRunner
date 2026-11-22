@@ -269,7 +269,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &221985
 RectTransform:
   m_ObjectHideFlags: 0
@@ -241878,6 +241878,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Prop_Chair_Fancy_01
       objectReference: {fileID: 0}
+    - target: {fileID: 1559570335526934, guid: 7046122174d85054c83afb16650695ed, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4896282655554922, guid: 7046122174d85054c83afb16650695ed, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0
@@ -287480,8 +287484,7 @@ GameObject:
   - component: {fileID: 697562349}
   - component: {fileID: 697562350}
   m_Layer: 0
-  m_Name: 'Trigger fow walk and get near so door openes and sequence continues for
-    castel lavel '
+  m_Name: 'Trigger '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -298519,6 +298522,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 221985}
+  - {fileID: 1721647196}
   m_Father: {fileID: 747728992}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -502033,15 +502037,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4233581693869416, guid: 90c2fdbf27d1e444cb1a29884a436e43, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4233581693869416, guid: 90c2fdbf27d1e444cb1a29884a436e43, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.88
+      value: 0.51
       objectReference: {fileID: 0}
     - target: {fileID: 4233581693869416, guid: 90c2fdbf27d1e444cb1a29884a436e43, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0.84
+      value: 1.46
       objectReference: {fileID: 0}
     - target: {fileID: 4233581693869416, guid: 90c2fdbf27d1e444cb1a29884a436e43, type: 3}
       propertyPath: m_LocalRotation.w
@@ -649926,7 +649930,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1579666171
 RectTransform:
   m_ObjectHideFlags: 0
@@ -649938,8 +649942,7 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 1721647196}
+  m_Children: []
   m_Father: {fileID: 747728992}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -649961,6 +649964,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   chartRenderer: {fileID: 1948280574}
   challengeCanvas: {fileID: 1579666170}
+  mainChallengePanel: {fileID: 1721647195}
   feedbackModal: {fileID: 1950703011}
   victoryModal: {fileID: 223276002}
   failureModal: {fileID: 1472175030}
@@ -706320,7 +706324,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1721647196
 RectTransform:
   m_ObjectHideFlags: 0
@@ -706328,7 +706332,7 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1721647195}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -706346,7 +706350,7 @@ RectTransform:
   - {fileID: 1950703012}
   - {fileID: 1472175031}
   - {fileID: 223276003}
-  m_Father: {fileID: 1579666171}
+  m_Father: {fileID: 721106621}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
