@@ -78,6 +78,8 @@ namespace RunnerForex.Castle
 
         private void Start()
         {
+            PickFiveRandomChallenges();
+
             if (buyButton != null) buyButton.onClick.AddListener(() => OnActionSelected(TradeAction.BUY));
             if (sellButton != null) sellButton.onClick.AddListener(() => OnActionSelected(TradeAction.SELL));
             if (waitButton != null) waitButton.onClick.AddListener(() => OnActionSelected(TradeAction.WAIT));
@@ -182,6 +184,11 @@ namespace RunnerForex.Castle
         private void OnActionSelected(TradeAction chosenAction)
         {
             if (isAnswering) return;
+            if (activeFiveChallenges == null || activeFiveChallenges.Count == 0 || currentChallengeIndex < 0 || currentChallengeIndex >= activeFiveChallenges.Count)
+            {
+                return;
+            }
+
             isAnswering = true;
             SetButtonsInteractable(false);
 

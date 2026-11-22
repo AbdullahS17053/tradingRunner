@@ -366,7 +366,18 @@ public class PowerUpManager : MonoBehaviour
                 {
                     var main = ps.main;
                     main.scalingMode = ParticleSystemScalingMode.Hierarchy;
-                    if (main.startSizeMultiplier > 0.3f) main.startSizeMultiplier = 0.2f;
+                    if (isSpaceship)
+                    {
+                        main.startSizeMultiplier = 0.08f;
+                        main.startSizeYMultiplier = 0.08f;
+                        main.startSizeZMultiplier = 0.08f;
+                        main.startSpeedMultiplier = 2.0f;
+                        main.startLifetimeMultiplier = 0.22f;
+                    }
+                    else
+                    {
+                        if (main.startSizeMultiplier > 0.3f) main.startSizeMultiplier = 0.2f;
+                    }
                 }
             }
 
@@ -433,7 +444,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return new Vector3(0f, 0.2f, 0f);
-                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.05f, -1.6f);
+                case PowerUpType.SpeedBoost: return new Vector3(0f, 0.05f, -1.05f);
                 case PowerUpType.CoinMagnet: return new Vector3(0f, 0.4f, 0f);
                 case PowerUpType.DoubleTP: return new Vector3(0f, 0.6f, 0f);
                 case PowerUpType.WeaponUpgrade: return new Vector3(0f, 0.2f, 1.2f);
@@ -465,7 +476,7 @@ public class PowerUpManager : MonoBehaviour
             switch (type)
             {
                 case PowerUpType.Shield: return new Vector3(2.4f, 1.5f, 3.2f);
-                case PowerUpType.SpeedBoost: return new Vector3(0.25f, 0.25f, 0.4f);
+                case PowerUpType.SpeedBoost: return new Vector3(0.08f, 0.08f, 0.12f);
                 case PowerUpType.CoinMagnet: return Vector3.one * 1.8f;
                 case PowerUpType.DoubleTP: return Vector3.one * 1.6f;
                 case PowerUpType.WeaponUpgrade: return Vector3.one * 1.5f;

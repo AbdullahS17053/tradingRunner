@@ -251,14 +251,7 @@ public class PowerUpHUD : MonoBehaviour
 
     private void CreateAnnouncementToast(string text, Color bannerColor)
     {
-        if (!gameObject.activeInHierarchy)
-        {
-            transform.SetParent(null);
-            gameObject.SetActive(true);
-            DontDestroyOnLoad(gameObject);
-        }
-
-        Canvas canvas = FindObjectOfType<Canvas>();
+        Canvas canvas = Object.FindFirstObjectByType<Canvas>();
         if (canvas == null) return;
 
         if (activeToastObj != null)
@@ -305,41 +298,45 @@ public class PowerUpHUD : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = bannerColor;
 
-        if (activeToastRoutine != null) StopCoroutine(activeToastRoutine);
-        activeToastRoutine = StartCoroutine(ToastAnimationRoutine(activeToastObj));
+        // Run animation directly on active toast GameObject component to guarantee active coroutine execution
+        ToastAnimationRunner runner = activeToastObj.AddComponent<ToastAnimationRunner>();
+        runner.StartAnimation(activeToastObj.GetComponent<CanvasGroup>());
     }
 
-    private IEnumerator ToastAnimationRoutine(GameObject toast)
+    public class ToastAnimationRunner : MonoBehaviour
     {
-        if (toast == null) yield break;
-
-        CanvasGroup cg = toast.GetComponent<CanvasGroup>();
-        Transform t = toast.transform;
-
-        // Punch pop-in
-        t.localScale = Vector3.one * 1.3f;
-        float elapsed = 0f;
-        while (elapsed < 0.18f)
+        public void StartAnimation(CanvasGroup cg)
         {
-            if (toast == null) yield break;
-            elapsed += Time.unscaledDeltaTime;
-            t.localScale = Vector3.Lerp(Vector3.one * 1.3f, Vector3.one, elapsed / 0.18f);
-            yield return null;
+            StartCoroutine(ToastAnimationRoutine(cg));
         }
 
-        // Hold visible
-        yield return new WaitForSecondsRealtime(1.8f);
-
-        // Fade out
-        elapsed = 0f;
-        while (elapsed < 0.4f)
+        private IEnumerator ToastAnimationRoutine(CanvasGroup cg)
         {
-            if (toast == null) yield break;
-            elapsed += Time.unscaledDeltaTime;
-            if (cg != null) cg.alpha = Mathf.Lerp(1f, 0f, elapsed / 0.4f);
-            yield return null;
-        }
+            Transform t = transform;
 
-        if (toast != null) Destroy(toast);
+            // Punch pop-in
+            t.localScale = Vector3.one * 1.3f;
+            float elapsed = 0f;
+            while (elapsed < 0.18f)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                t.localScale = Vector3.Lerp(Vector3.one * 1.3f, Vector3.one, elapsed / 0.18f);
+                yield return null;
+            }
+
+            // Hold visible
+            yield return new WaitForSecondsRealtime(1.8f);
+
+            // Fade out
+            elapsed = 0f;
+            while (elapsed < 0.4f)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                if (cg != null) cg.alpha = Mathf.Lerp(1f, 0f, elapsed / 0.4f);
+                yield return null;
+            }
+
+            Destroy(gameObject);
+        }
     }
 }

@@ -15,12 +15,16 @@ namespace RunnerForex.Castle
         [Tooltip("The rear chaser bot which should be disabled in Castle")]
         public GameObject rearChaserBot;
 
+        [Header("User Walk & Door Sequence Trigger")]
+        [Tooltip("Reference to the user-created trigger collider")]
+        public Collider userWalkSequenceCollider;
+
         [Header("Golden Doors & Walk Transition")]
         public Transform goldenDoorsTransform;
         public Transform leftDoorWing;
         public Transform rightDoorWing;
         public float doorZPosition = 63.5f;
-        public float walkTriggerZPosition = 61.5f; // 1-2m before door in local Z
+        public float walkTriggerZPosition = 61.5f; // Fallback distance if trigger collider is not reached
         public float walkSpeed = 2.6f;
 
         [Header("Computer Room Lane")]
@@ -45,6 +49,11 @@ namespace RunnerForex.Castle
         [Header("Runtime State")]
         public bool hasTransitionedToWalk = false;
         public bool isSequenceRunning = false;
+
+        private Quaternion leftDoorInitialRot = Quaternion.identity;
+        private Quaternion rightDoorInitialRot = Quaternion.identity;
+        private Quaternion leftDoorOpenRot = Quaternion.Euler(0f, -85f, 0f);
+        private Quaternion rightDoorOpenRot = Quaternion.Euler(0f, 85f, 0f);
 
         private RunnerController runner;
         private Camera activeCamera;
@@ -117,13 +126,51 @@ namespace RunnerForex.Castle
                 if (runner == null) return;
             }
 
-            // Check if player has reached 1-2 meters before the golden doors in track coordinate
+            // 1. Check user-created trigger collider intersection
+            if (userWalkSequenceCollider != null)
+            {
+                CharacterController cc = runner.GetComponent<CharacterController>();
+                if (cc != null && userWalkSequenceCollider.bounds.Intersects(cc.bounds))
+                {
+                    Debug.Log("[CastleSequenceController] Detected intersection with user walk sequence collider!");
+                    StartWalkAndDoorSequenceFromTrigger();
+                    return;
+                }
+            }
+
+            // 2. Fallback distance check if runner reaches walk trigger point
             float currentZ = runner.transform.parent != null ? runner.transform.localPosition.z : runner.transform.position.z;
             if (currentZ >= walkTriggerZPosition)
             {
-                hasTransitionedToWalk = true;
-                StartCoroutine(WalkToDoorAndTransitionRoutine());
+                StartWalkAndDoorSequenceFromTrigger();
             }
+        }
+
+        /// <summary>
+        /// Public entry point called by CastleWalkSequenceTrigger via OnTriggerStay or OnTriggerEnter.
+        /// </summary>
+        public void OnPlayerInWalkTriggerStay()
+        {
+            StartWalkAndDoorSequence();
+        }
+
+        public void OnPlayerInWalkTriggerBox()
+        {
+            StartWalkAndDoorSequence();
+        }
+
+        public void StartWalkAndDoorSequenceFromTrigger()
+        {
+            StartWalkAndDoorSequence();
+        }
+
+        public void StartWalkAndDoorSequence()
+        {
+            if (hasTransitionedToWalk || isSequenceRunning) return;
+            hasTransitionedToWalk = true;
+            isSequenceRunning = true;
+            Debug.Log("[CastleSequenceController] Walk sequence triggered! Walking towards golden doors.");
+            StartCoroutine(WalkToDoorAndTransitionRoutine());
         }
 
         /// <summary>
@@ -153,21 +200,109 @@ namespace RunnerForex.Castle
                 {
                     bot.gameObject.SetActive(false);
                 }
-                else if (bName.Contains("front") || vName.Contains("castle guard") || bot.behaviorType == FomoBot.BotBehaviorType.FrontPatrolCharge)
+                else
                 {
                     bot.gameObject.SetActive(true);
+                    bot.movementSpeed = 3.0f;
+                    bot.telegraphDistance = 22.0f;
+                    bot.beamReach = 45.0f;
                     frontGuardBot = bot.gameObject;
+
+                    // Clean up any duplicate base FOMOController components on the front guard bot
+                    FOMOController[] fcs = bot.GetComponents<FOMOController>();
+                    foreach (var fc in fcs)
+                    {
+                        if (fc.GetType() == typeof(FOMOController))
+                        {
+                            Destroy(fc);
+                        }
+                    }
                 }
             }
         }
 
+        private void DisableDoorColliders()
+        {
+            if (goldenDoorsTransform != null)
+            {
+                foreach (Collider c in goldenDoorsTransform.GetComponentsInChildren<Collider>(true))
+                {
+                    string n = c.gameObject.name.ToLower();
+                    if (n.Contains("door") || n.Contains("portcullis"))
+                    {
+                        c.enabled = false;
+                        Debug.Log("[CastleSequenceController] Disabled door obstacle collider: " + c.gameObject.name);
+                    }
+                }
+            }
+        }
+
+        private IEnumerator AnimateDoorsOpenRoutine(float duration)
+        {
+            DisableDoorColliders();
+
+            if (SoundManager.Instance != null && SoundManager.Instance.collectTPSound != null)
+            {
+                SoundManager.Instance.PlaySFX(SoundManager.Instance.collectTPSound);
+            }
+
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+                if (leftDoorWing != null) leftDoorWing.localRotation = Quaternion.Slerp(leftDoorInitialRot, leftDoorOpenRot, t);
+                if (rightDoorWing != null) rightDoorWing.localRotation = Quaternion.Slerp(rightDoorInitialRot, rightDoorOpenRot, t);
+                yield return null;
+            }
+            if (leftDoorWing != null) leftDoorWing.localRotation = leftDoorOpenRot;
+            if (rightDoorWing != null) rightDoorWing.localRotation = rightDoorOpenRot;
+        }
+
         /// <summary>
-        /// Automatically finds or dynamically builds any missing scene elements for the Castle flow,
-        /// properly parenting them under -- CASTLE GAMEPLAY -- so they align with the castle diorama.
+        /// Automatically finds and wires the user trigger collider, golden doors, lottery box, and UI elements.
         /// </summary>
         private void EnsureSceneElements()
         {
             FindGameplayRoot();
+
+            // 0. Discover & Wire User Walk & Door Trigger Collider
+            if (userWalkSequenceCollider == null)
+            {
+                GameObject userObj = GameObject.Find("Trigger fow walk and get near so door openes and sequence continues for castel lavel ");
+                if (userObj == null)
+                {
+                    foreach (var col in Object.FindObjectsByType<Collider>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    {
+                        if (col.gameObject.name.Contains("Trigger fow walk") || col.gameObject.name.Contains("door openes") || col.gameObject.name.Contains("sequence continues"))
+                        {
+                            userObj = col.gameObject;
+                            userWalkSequenceCollider = col;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    userWalkSequenceCollider = userObj.GetComponent<Collider>();
+                }
+
+                if (userObj != null)
+                {
+                    CastleWalkSequenceTrigger trig = userObj.GetComponent<CastleWalkSequenceTrigger>();
+                    if (trig == null) trig = userObj.AddComponent<CastleWalkSequenceTrigger>();
+
+                    BoxCollider bc = userObj.GetComponent<BoxCollider>();
+                    if (bc != null) bc.isTrigger = true;
+
+                    Rigidbody rb = userObj.GetComponent<Rigidbody>();
+                    if (rb == null) rb = userObj.AddComponent<Rigidbody>();
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+
+                    Debug.Log("[CastleSequenceController] Successfully wired user trigger: " + userObj.name);
+                }
+            }
 
             // 1. Screen Fade Overlay
             if (fadeCanvasGroup == null)
@@ -203,13 +338,25 @@ namespace RunnerForex.Castle
                 }
             }
 
-            // 2. Golden Doors (at local Z = doorZPosition)
+            // 2. Real Castle Gate & Golden Doors
             if (goldenDoorsTransform == null)
             {
-                GameObject gdObj = GameObject.Find("GoldenDoors");
-                if (gdObj != null)
+                GameObject gateObj = GameObject.Find("SM_Bld_Castle_Wall_Gate_01");
+                if (gateObj == null)
                 {
-                    goldenDoorsTransform = gdObj.transform;
+                    foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    {
+                        if (t.name.Contains("Wall_Gate_01") || t.name.Contains("GoldenDoors"))
+                        {
+                            gateObj = t.gameObject;
+                            break;
+                        }
+                    }
+                }
+
+                if (gateObj != null)
+                {
+                    goldenDoorsTransform = gateObj.transform;
                 }
                 else
                 {
@@ -217,17 +364,21 @@ namespace RunnerForex.Castle
                 }
             }
 
-            if (goldenDoorsTransform != null && (leftDoorWing == null || rightDoorWing == null))
+            if (goldenDoorsTransform != null)
             {
                 foreach (Transform child in goldenDoorsTransform.GetComponentsInChildren<Transform>(true))
                 {
-                    if (child.name.Contains("Door_Left") || child.name.Contains("DoorLeft") || child.name.Contains("Door_01"))
+                    if (child.name.Contains("Door_L") || child.name.Contains("DoorLeft") || child.name.Contains("Door_01"))
                     {
                         leftDoorWing = child;
+                        leftDoorInitialRot = leftDoorWing.localRotation;
+                        leftDoorOpenRot = leftDoorInitialRot * Quaternion.Euler(0f, -90f, 0f);
                     }
-                    else if (child.name.Contains("Door_Right") || child.name.Contains("DoorRight") || child.name.Contains("Door_02"))
+                    else if (child.name.Contains("Door_R") || child.name.Contains("DoorRight") || child.name.Contains("Door_02"))
                     {
                         rightDoorWing = child;
+                        rightDoorInitialRot = rightDoorWing.localRotation;
+                        rightDoorOpenRot = rightDoorInitialRot * Quaternion.Euler(0f, 90f, 0f);
                     }
                 }
             }
@@ -477,65 +628,111 @@ namespace RunnerForex.Castle
         }
 
         /// <summary>
-        /// Phase 1 & 2: Runner switches to walk 1-2m before golden doors, walks to doors, and fades out.
+        /// Phase 1 & 2: Triggered by user's trigger collider (OnTriggerStay / OnTriggerEnter).
+        /// Character switches to walk animation, moves towards the door while casting a ray forward from chest.
+        /// When within 2m, door colliders disable and doors smoothly open. Screen fades to black,
+        /// and player transitions to the computer room lane.
         /// </summary>
         private IEnumerator WalkToDoorAndTransitionRoutine()
         {
             isSequenceRunning = true;
 
-            // 1. Switch to walk state
+            if (runner == null)
+            {
+                runner = RunnerController.Instance ?? FindFirstObjectByType<RunnerController>();
+            }
+
+            CharacterController cc = (runner != null) ? runner.GetComponent<CharacterController>() : null;
+
+            // 1. Switch to walk state and disable runner swipe/jump input
             if (runner != null)
             {
-                runner.enabled = false; // Disable swipe & jump controls
-
+                runner.enabled = false;
                 if (runner.animator != null)
                 {
-                    runner.animator.CrossFadeInFixedTime("Walk_BlendTree", 0.25f);
+                    runner.animator.CrossFadeInFixedTime("Walk_BlendTree", 0.2f);
                 }
             }
 
-            bool hasParent = runner != null && runner.transform.parent != null;
-            float startZ = hasParent ? runner.transform.localPosition.z : runner.transform.position.z;
-            float targetZ = doorZPosition;
-            float distance = Mathf.Max(0.1f, targetZ - startZ);
-            float duration = distance / Mathf.Max(1f, walkSpeed);
-            float elapsed = 0f;
+            Vector3 walkDir = (gameplayRoot != null ? gameplayRoot.forward : (runner != null ? runner.transform.forward : Vector3.forward)).normalized;
 
-            Vector3 walkStartLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
-            Vector3 walkEndLocal = new Vector3(0f, walkStartLocal.y, targetZ);
+            // 2. Walk forward while casting ray from chest forward towards the door
+            bool doorOpened = false;
+            float maxWalkTimeBeforeDoor = 8.0f;
+            float elapsedWalk = 0f;
 
-            while (elapsed < duration)
+            while (!doorOpened && elapsedWalk < maxWalkTimeBeforeDoor)
             {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / duration);
-                if (runner != null)
+                elapsedWalk += Time.deltaTime;
+
+                if (runner != null && cc != null && cc.enabled)
                 {
-                    if (hasParent)
+                    Vector3 moveStep = (walkDir * walkSpeed + Vector3.down * 9.8f) * Time.deltaTime;
+                    cc.Move(moveStep);
+                    runner.transform.rotation = Quaternion.LookRotation(walkDir);
+                }
+
+                // Raycast forward from chest (+1.3m up)
+                Vector3 chestOrigin = (runner != null) ? runner.transform.position + Vector3.up * 1.3f : Vector3.zero;
+                float detectedDist = float.MaxValue;
+
+                if (Physics.Raycast(chestOrigin, walkDir, out RaycastHit hit, 10f))
+                {
+                    detectedDist = hit.distance;
+                }
+
+                // Geometric fallback distance to gate doors
+                if (goldenDoorsTransform != null && runner != null)
+                {
+                    Vector3 toDoor = goldenDoorsTransform.position - runner.transform.position;
+                    float planarDist = Vector3.Dot(toDoor, walkDir);
+                    if (planarDist > 0f && planarDist < detectedDist)
                     {
-                        runner.transform.localPosition = Vector3.Lerp(walkStartLocal, walkEndLocal, t);
-                        runner.transform.localRotation = Quaternion.identity;
+                        detectedDist = planarDist;
                     }
-                    else
-                    {
-                        runner.transform.position = Vector3.Lerp(walkStartLocal, walkEndLocal, t);
-                        runner.transform.rotation = Quaternion.identity;
-                    }
+                }
+
+                // When distance is 2m, trigger door opening!
+                if (detectedDist <= 2.0f)
+                {
+                    doorOpened = true;
+                    Debug.Log($"[CastleSequenceController] Chest raycast detected door at {detectedDist:F2}m! Opening doors.");
+                }
+
+                yield return null;
+            }
+
+            // 3. Doors swing open smoothly (+/- 85 deg) and door colliders disable
+            StartCoroutine(AnimateDoorsOpenRoutine(0.7f));
+
+            // Continue walking through the open doorway as screen fades in to black
+            float walkThroughTime = 0.9f;
+            float walkThroughElapsed = 0f;
+
+            // Fade screen in to black (0 -> 1 over fadeDuration)
+            StartCoroutine(FadeScreenRoutine(0f, 1f, fadeDuration));
+
+            while (walkThroughElapsed < walkThroughTime)
+            {
+                walkThroughElapsed += Time.deltaTime;
+                if (runner != null && cc != null && cc.enabled)
+                {
+                    Vector3 moveStep = (walkDir * walkSpeed + Vector3.down * 9.8f) * Time.deltaTime;
+                    cc.Move(moveStep);
                 }
                 yield return null;
             }
 
-            // 3. Reached Golden Doors -> Fade screen in (to black)
-            yield return StartCoroutine(FadeScreenRoutine(0f, 1f, fadeDuration));
+            yield return new WaitForSeconds(0.15f);
 
-            // 4. In black screen: Swing open golden doors
-            if (leftDoorWing != null) leftDoorWing.localRotation = Quaternion.Euler(0f, -85f, 0f);
-            if (rightDoorWing != null) rightDoorWing.localRotation = Quaternion.Euler(0f, 85f, 0f);
-
-            // Position player at entrance of computer lane
+            // 4. Position player at entrance of computer lane
             if (runner != null)
             {
-                if (hasParent)
+                if (cc != null) cc.enabled = false;
+
+                if (gameplayRoot != null)
                 {
+                    runner.transform.SetParent(gameplayRoot, false);
                     runner.transform.localPosition = new Vector3(0f, 0.15f, 66f);
                     runner.transform.localRotation = Quaternion.identity;
                 }
@@ -546,15 +743,15 @@ namespace RunnerForex.Castle
                     runner.transform.rotation = Quaternion.identity;
                 }
 
+                if (cc != null) cc.enabled = true;
+
                 if (runner.animator != null)
                 {
                     runner.animator.Play("Walk_BlendTree", 0, 0f);
                 }
             }
 
-            yield return new WaitForSeconds(0.2f);
-
-            // 5. Fade screen back out (revealing the computer lane)
+            // 5. Fade screen back out (1 -> 0 over fadeDuration)
             yield return StartCoroutine(FadeScreenRoutine(1f, 0f, fadeDuration));
 
             // 6. Player sees himself in the computer lane and continues walking towards the desk
@@ -562,73 +759,94 @@ namespace RunnerForex.Castle
         }
 
         /// <summary>
-        /// Phase 3: Walking down computer lane to chair, sits down, swoops camera to monitor, launches quiz.
+        /// Phase 3: Walking down computer lane to chair. Chest raycast detects distance to desk/chair.
+        /// When within <= 1.2m, player sits down in chair, camera shifts smoothly to computer monitor,
+        /// typing audio plays, and 5-question challenge UI opens.
         /// </summary>
         private IEnumerator WalkToComputerDeskRoutine()
         {
-            bool hasParent = runner != null && runner.transform.parent != null;
-            Vector3 deskWalkStartLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
-            Vector3 chairLocalPos = chairSeatTransform != null && hasParent ? chairSeatTransform.localPosition : (chairSeatTransform != null ? chairSeatTransform.position : new Vector3(0f, 0.15f, 74.8f));
+            if (runner == null)
+            {
+                runner = RunnerController.Instance ?? FindFirstObjectByType<RunnerController>();
+            }
 
-            // Stop right in front of the chair
-            Vector3 walkTargetLocal = new Vector3(0f, deskWalkStartLocal.y, chairLocalPos.z - 0.7f);
-            float dist = Mathf.Max(0.1f, walkTargetLocal.z - deskWalkStartLocal.z);
-            float walkTime = dist / Mathf.Max(1f, walkSpeed);
-            float elapsed = 0f;
+            CharacterController cc = (runner != null) ? runner.GetComponent<CharacterController>() : null;
+            Vector3 deskWalkDir = (gameplayRoot != null ? gameplayRoot.forward : (runner != null ? runner.transform.forward : Vector3.forward)).normalized;
 
             if (runner != null && runner.animator != null)
             {
                 runner.animator.CrossFadeInFixedTime("Walk_BlendTree", 0.15f);
             }
 
-            // Walk smoothly down the lane
-            while (elapsed < walkTime)
+            bool deskReached = false;
+            float maxDeskWalkTime = 10.0f;
+            float elapsedDeskWalk = 0f;
+
+            while (!deskReached && elapsedDeskWalk < maxDeskWalkTime)
             {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / walkTime);
-                if (runner != null)
+                elapsedDeskWalk += Time.deltaTime;
+
+                if (runner != null && cc != null && cc.enabled)
                 {
-                    if (hasParent)
+                    Vector3 moveStep = (deskWalkDir * walkSpeed + Vector3.down * 9.8f) * Time.deltaTime;
+                    cc.Move(moveStep);
+                    runner.transform.rotation = Quaternion.LookRotation(deskWalkDir);
+                }
+
+                // Chest raycast forward towards desk / chair
+                Vector3 chestOrigin = (runner != null) ? runner.transform.position + Vector3.up * 1.3f : Vector3.zero;
+                float detectedDist = float.MaxValue;
+
+                if (Physics.Raycast(chestOrigin, deskWalkDir, out RaycastHit hit, 10f))
+                {
+                    detectedDist = hit.distance;
+                }
+
+                // Geometric fallback distance to chair
+                if (chairSeatTransform != null && runner != null)
+                {
+                    Vector3 toChair = chairSeatTransform.position - runner.transform.position;
+                    float planarDist = Vector3.Dot(toChair, deskWalkDir);
+                    if (planarDist > 0f && planarDist < detectedDist)
                     {
-                        runner.transform.localPosition = Vector3.Lerp(deskWalkStartLocal, walkTargetLocal, t);
-                        runner.transform.localRotation = Quaternion.identity;
-                    }
-                    else
-                    {
-                        runner.transform.position = Vector3.Lerp(deskWalkStartLocal, walkTargetLocal, t);
-                        runner.transform.rotation = Quaternion.identity;
+                        detectedDist = planarDist;
                     }
                 }
+
+                // When within <= 1.2m of table/chair, stop and transition!
+                if (detectedDist <= 1.25f)
+                {
+                    deskReached = true;
+                    Debug.Log($"[CastleSequenceController] Chest raycast detected desk/chair at {detectedDist:F2}m! Seating player.");
+                }
+
                 yield return null;
             }
 
-            // Align into chair seat
-            float alignElapsed = 0f;
-            Vector3 alignStartLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
-            Quaternion alignStartRot = hasParent ? runner.transform.localRotation : runner.transform.rotation;
-            Quaternion targetChairRot = chairSeatTransform != null && hasParent ? chairSeatTransform.localRotation : (chairSeatTransform != null ? chairSeatTransform.rotation : Quaternion.identity);
-
-            while (alignElapsed < 0.45f)
+            // Smoothly align player into chair seat
+            if (runner != null && chairSeatTransform != null)
             {
-                alignElapsed += Time.deltaTime;
-                float t = Mathf.SmoothStep(0f, 1f, alignElapsed / 0.45f);
-                if (runner != null)
+                if (cc != null) cc.enabled = false;
+
+                Vector3 startPos = runner.transform.position;
+                Quaternion startRot = runner.transform.rotation;
+                float alignElapsed = 0f;
+                float alignDuration = 0.4f;
+
+                while (alignElapsed < alignDuration)
                 {
-                    if (hasParent)
-                    {
-                        runner.transform.localPosition = Vector3.Lerp(alignStartLocal, chairLocalPos, t);
-                        runner.transform.localRotation = Quaternion.Slerp(alignStartRot, targetChairRot, t);
-                    }
-                    else
-                    {
-                        runner.transform.position = Vector3.Lerp(alignStartLocal, chairLocalPos, t);
-                        runner.transform.rotation = Quaternion.Slerp(alignStartRot, targetChairRot, t);
-                    }
+                    alignElapsed += Time.deltaTime;
+                    float t = Mathf.SmoothStep(0f, 1f, alignElapsed / alignDuration);
+                    runner.transform.position = Vector3.Lerp(startPos, chairSeatTransform.position, t);
+                    runner.transform.rotation = Quaternion.Slerp(startRot, chairSeatTransform.rotation, t);
+                    yield return null;
                 }
-                yield return null;
+
+                runner.transform.position = chairSeatTransform.position;
+                runner.transform.rotation = chairSeatTransform.rotation;
             }
 
-            // Play Sitting Pose
+            // Play Sitting Pose animation
             if (runner != null && runner.animator != null)
             {
                 runner.animator.Play("SittingPose", 0, 0f);

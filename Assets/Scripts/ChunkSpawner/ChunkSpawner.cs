@@ -330,30 +330,29 @@ public class ChunkSpawner : MonoBehaviour
 
         if (prefabToSpawn == null) return;
 
-        Vector3 spawnWorldPos;
         Quaternion spawnWorldRot = chunk.transform.rotation * Quaternion.Euler(0f, 180f, 0f); // Face towards oncoming player
 
-        // Spawn in the middle where coins spawn in the middle
+        // Always spawn enemy strictly in the MIDDLE lane (center lane, local X = 0f)
+        float groundY = chunk.transform.position.y;
         if (chunk.coinsParent != null && chunk.coinsParent.childCount > 0)
         {
-            int middleIndex = chunk.coinsParent.childCount / 2;
-            Transform targetCoin = chunk.coinsParent.GetChild(middleIndex);
-            if (targetCoin != null)
-            {
-                spawnWorldPos = targetCoin.position;
-                // Align feet neatly onto the track surface where coins sit
-                spawnWorldPos.y = Mathf.Max(chunk.transform.position.y, targetCoin.position.y - 0.35f);
-                targetCoin.gameObject.SetActive(false); // Replace coin at this center position
-            }
-            else
-            {
-                spawnWorldPos = chunk.transform.position + (chunk.transform.forward * 16f);
-            }
+            groundY = Mathf.Max(groundY, chunk.coinsParent.GetChild(0).position.y - 0.35f);
         }
-        else
+
+        // Center lane: lateral local X = 0f (exact middle of track), 16m forward on the chunk
+        Vector3 spawnWorldPos = chunk.transform.TransformPoint(new Vector3(0f, 0f, 16f));
+        spawnWorldPos.y = groundY;
+
+        // If any coins are placed in the center lane at this position, deactivate them so they don't clip through the enemy
+        if (chunk.coinsParent != null)
         {
-            // Center lane (0f lateral offset) in the middle of the track
-            spawnWorldPos = chunk.transform.position + (chunk.transform.forward * 16f);
+            foreach (Transform coin in chunk.coinsParent)
+            {
+                if (coin != null && Vector3.Distance(coin.position, spawnWorldPos) < 2.5f)
+                {
+                    coin.gameObject.SetActive(false);
+                }
+            }
         }
 
         GameObject enemyObj = Instantiate(prefabToSpawn, chunk.transform);

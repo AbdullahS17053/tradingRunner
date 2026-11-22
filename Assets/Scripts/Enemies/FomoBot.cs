@@ -19,7 +19,7 @@ public class FomoBot : FOMOController
     public string botVariantName = "FOMO Bot";
 
     [Header("Movement Speeds")]
-    public float movementSpeed = 4.5f;
+    public float movementSpeed = 3.5f;
     public float chargeMultiplier = 1.7f;
     public float rearApproachSpeed = 22.0f;
     public float laneChangeInterval = 2.5f;
@@ -94,18 +94,17 @@ public class FomoBot : FOMOController
 
     private void HandleFrontEnemy()
     {
-        Vector3 toBot = transform.position - player.position;
-        Vector3 trackForward = (transform.parent != null && transform.parent.GetComponent<TrackChunk>() != null)
-            ? transform.parent.forward
-            : -transform.forward;
+        Vector3 botInPlayerSpace = runnerController != null 
+            ? runnerController.transform.InverseTransformPoint(transform.position) 
+            : (player != null ? player.InverseTransformPoint(transform.position) : Vector3.zero);
 
-        float distToPlayer = Vector3.Dot(toBot, trackForward);
+        float distToPlayer = botInPlayerSpace.z;
 
-        // Advance along corridor only when not charging or firing beam
+        // Advance along corridor towards player only when not charging or firing beam
         if (distToPlayer > 0f && !isEnemyAttacking)
         {
             float speedMult = GameManager.Instance != null ? GameManager.Instance.currentSpeedMultiplier : 1.0f;
-            transform.position += transform.forward * (movementSpeed * speedMult * 0.4f * Time.deltaTime);
+            transform.position += transform.forward * (movementSpeed * speedMult * Time.deltaTime);
         }
 
         // Trigger Beam Attack when within telegraph range
@@ -116,7 +115,8 @@ public class FomoBot : FOMOController
             StartCoroutine(EnemyBeamSequenceWrapper());
         }
 
-        if (distToPlayer < -18f)
+        // Only deactivate when player is well past the enemy (dodged and passed)
+        if (distToPlayer < -5f)
         {
             gameObject.SetActive(false);
         }

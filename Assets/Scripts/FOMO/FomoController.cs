@@ -73,6 +73,18 @@ public class FOMOController : MonoBehaviour
 
     protected virtual void Awake()
     {
+        // If this is a base FOMOController component but a FomoBot subclass is also on the same GameObject,
+        // destroy this duplicate base component immediately to avoid duplicate updates and conflicts.
+        if (GetType() == typeof(FOMOController))
+        {
+            Component botSubclass = GetComponent("FomoBot");
+            if (botSubclass != null)
+            {
+                Destroy(this);
+                return;
+            }
+        }
+
         if (fomoLaserOrigin == null)
         {
             fomoLaserOrigin = FindChildRecursive(transform, "LaserOrigin");
@@ -441,10 +453,10 @@ public class FOMOController : MonoBehaviour
             // Immediate check: If player is in the lane of the enemy, the effect starts immediately (zero wait time)!
             if (player != null)
             {
-                float botX = transform.position.x;
-                bool isPlayerInLane = Mathf.Abs(player.position.x - botX) < 1.15f;
-                Vector3 toPlayer = player.position - transform.position;
-                float forwardDistance = Vector3.Dot(toPlayer, transform.forward);
+                Vector3 toPlayerInBotSpace = transform.InverseTransformPoint(player.position);
+                float forwardDistance = toPlayerInBotSpace.z;
+                float lateralOffset = Mathf.Abs(toPlayerInBotSpace.x);
+                bool isPlayerInLane = lateralOffset < 1.15f;
                 bool isPlayerInFront = isPlayerInLane && forwardDistance > 0f && forwardDistance <= beamReach;
 
                 if (isPlayerInFront)
@@ -510,10 +522,10 @@ public class FOMOController : MonoBehaviour
         // Beam shoots straight down the bot's lane. If player is in that lane, hit; otherwise dodged!
         if (runnerController != null && !runnerController.IsDead && player != null)
         {
-            float botX = transform.position.x;
-            bool isPlayerInLane = Mathf.Abs(player.position.x - botX) < 1.15f;
-            Vector3 toPlayer = player.position - transform.position;
-            float forwardDistance = Vector3.Dot(toPlayer, transform.forward);
+            Vector3 toPlayerInBotSpace = transform.InverseTransformPoint(player.position);
+            float forwardDistance = toPlayerInBotSpace.z;
+            float lateralOffset = Mathf.Abs(toPlayerInBotSpace.x);
+            bool isPlayerInLane = lateralOffset < 1.15f;
             bool isHit = isPlayerInLane && forwardDistance > 0f && forwardDistance <= beamReach;
 
             if (isHit)
