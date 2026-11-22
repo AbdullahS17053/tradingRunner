@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class SwipeController : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class SwipeController : MonoBehaviour
     private Vector2 touchEndPos;
 
     private bool hasSwiped = false;
+    private bool touchStartedOnUI = false;
 
     private void Update()
     {
@@ -28,10 +30,11 @@ public class SwipeController : MonoBehaviour
 
             if (touch.phase == TouchPhase.Began)
             {
+                touchStartedOnUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId);
                 touchStartPos = touch.position;
                 hasSwiped = false;
             }
-            else if (touch.phase == TouchPhase.Moved && !hasSwiped)
+            else if (touch.phase == TouchPhase.Moved && !hasSwiped && !touchStartedOnUI)
             {
                 touchEndPos = touch.position;
                 CheckSwipe();
@@ -39,15 +42,17 @@ public class SwipeController : MonoBehaviour
             else if (touch.phase == TouchPhase.Ended)
             {
                 hasSwiped = false;
+                touchStartedOnUI = false;
             }
         }
 
         if (Input.GetMouseButtonDown(0))
         {
+            touchStartedOnUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
             touchStartPos = Input.mousePosition;
             hasSwiped = false;
         }
-        else if (Input.GetMouseButton(0) && !hasSwiped)
+        else if (Input.GetMouseButton(0) && !hasSwiped && !touchStartedOnUI)
         {
             touchEndPos = Input.mousePosition;
             CheckSwipe();
@@ -55,6 +60,7 @@ public class SwipeController : MonoBehaviour
         else if (Input.GetMouseButtonUp(0))
         {
             hasSwiped = false;
+            touchStartedOnUI = false;
         }
     }
 

@@ -7,10 +7,12 @@ namespace RunnerForex.Castle
 {
     /// <summary>
     /// Interactive UI Card representing one of the 30 Candlestick Patterns with Movement Animations.
+    /// Pre-organized in the scene hierarchy so the designer can inspect and change listings directly.
     /// </summary>
     public class ForexPatternCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         [Header("Data")]
+        public int patternId = 1;
         public ForexPatternInfo patternInfo;
 
         [Header("UI Elements")]
@@ -27,47 +29,75 @@ namespace RunnerForex.Castle
         private Vector3 normalScale = Vector3.one;
         private System.Action<ForexPatternInfo> onClickCallback;
 
-        public void Bind(ForexPatternInfo info, System.Action<ForexPatternInfo> onSelected)
+        private void Awake()
         {
-            patternInfo = info;
-            onClickCallback = onSelected;
-
-            if (cardImage != null)
+            if (patternInfo == null && patternId > 0)
             {
-                Sprite sp = info.GetSprite();
-                if (sp != null)
-                {
-                    cardImage.sprite = sp;
-                }
+                patternInfo = ForexPatternDatabase.GetPattern(patternId);
             }
 
-            if (titleText != null)
+            if (cardImage == null) cardImage = transform.Find("CardSprite")?.GetComponent<Image>();
+            if (borderGlow == null) borderGlow = transform.Find("BorderGlow")?.GetComponent<Image>();
+            if (moveNameText == null) moveNameText = transform.Find("MoveLabel")?.GetComponent<TextMeshProUGUI>();
+            if (titleText == null) titleText = transform.Find("TitleLabel")?.GetComponent<TextMeshProUGUI>();
+            if (animator == null) animator = GetComponent<ForexPatternMovementAnimator>() ?? cardImage?.GetComponent<ForexPatternMovementAnimator>();
+
+            Button btn = GetComponent<Button>();
+            if (btn != null)
+            {
+                btn.onClick.RemoveAllListeners();
+                btn.onClick.AddListener(TriggerCardSelection);
+            }
+        }
+
+        public void Bind(ForexPatternInfo info, System.Action<ForexPatternInfo> onSelected)
+        {
+            if (info != null)
+            {
+                patternInfo = info;
+                patternId = info.id;
+            }
+            else if (patternInfo != null)
+            {
+                info = patternInfo;
+            }
+            else if (patternId > 0)
+            {
+                patternInfo = ForexPatternDatabase.GetPattern(patternId);
+                info = patternInfo;
+            }
+
+            onClickCallback = onSelected;
+
+            // Retain hierarchy customized sprite if already set, otherwise assign database sprite
+            if (cardImage != null && cardImage.sprite == null && info != null)
+            {
+                cardImage.sprite = info.GetSprite();
+            }
+
+            // Retain hierarchy customized title if already set, otherwise assign database title
+            if (titleText != null && string.IsNullOrEmpty(titleText.text) && info != null)
             {
                 titleText.text = info.DisplayTitle;
             }
 
-            if (moveNameText != null)
+            // Retain hierarchy customized move text if already set, otherwise assign database move
+            if (moveNameText != null && string.IsNullOrEmpty(moveNameText.text) && info != null)
             {
-                moveNameText.text = info.moveName.ToUpper();
+                moveNameText.text = $"{info.id}. {info.patternName}\n{info.moveName}";
                 moveNameText.color = info.BiasColor;
             }
 
-            if (badgeText != null)
-            {
-                badgeText.text = info.signal.ToString();
-                badgeText.color = info.BiasColor;
-            }
-
-            if (borderGlow != null)
+            if (borderGlow != null && borderGlow.color.a <= 0.05f && info != null)
             {
                 borderGlow.color = new Color(info.BiasColor.r, info.BiasColor.g, info.BiasColor.b, 0.4f);
             }
 
             if (animator == null)
             {
-                animator = GetComponent<ForexPatternMovementAnimator>() ?? gameObject.AddComponent<ForexPatternMovementAnimator>();
+                animator = GetComponent<ForexPatternMovementAnimator>() ?? cardImage?.GetComponent<ForexPatternMovementAnimator>();
             }
-            if (animator != null)
+            if (animator != null && info != null)
             {
                 animator.animationType = info.animationType;
             }
@@ -75,7 +105,7 @@ namespace RunnerForex.Castle
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            transform.localScale = normalScale * 1.08f;
+            transform.localScale = normalScale * 1.06f;
             if (borderGlow != null && patternInfo != null)
             {
                 borderGlow.color = new Color(patternInfo.BiasColor.r, patternInfo.BiasColor.g, patternInfo.BiasColor.b, 1.0f);
@@ -93,6 +123,11 @@ namespace RunnerForex.Castle
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            TriggerCardSelection();
+        }
+
+        public void TriggerCardSelection()
+        {
             if (animator != null)
             {
                 animator.PlayBurstAnimation();
@@ -103,7 +138,19 @@ namespace RunnerForex.Castle
                 SoundManager.Instance.PlaySFX(SoundManager.Instance.collectTPSound);
             }
 
-            onClickCallback?.Invoke(patternInfo);
+            if (patternInfo == null && patternId > 0)
+            {
+                patternInfo = ForexPatternDatabase.GetPattern(patternId);
+            }
+
+            if (onClickCallback != null)
+            {
+                onClickCallback.Invoke(patternInfo);
+            }
+            else if (ForexPatternsPanel.Instance != null && patternInfo != null)
+            {
+                ForexPatternsPanel.Instance.OnCardClicked(patternInfo);
+            }
         }
     }
 }

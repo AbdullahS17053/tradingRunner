@@ -176,17 +176,23 @@ public class FOMOController : MonoBehaviour
             currentDistanceBehind = Mathf.Min(currentDistanceBehind, maxDistanceBehind);
         }
 
+        // Camera is at local y=2.467, z=-3.53 looking down 15 degrees.
+        // When FOMO is close (distance <= 2.5m), we dynamically lift it so its head (at ~1.7m) is fully framed in the camera view as a warning!
+        float warningLift = Mathf.Lerp(0.38f, 0f, Mathf.Clamp01((currentDistanceBehind - 1.5f) / 1.5f));
+        float targetY = player.position.y + warningLift;
+
         if (runnerController != null && runnerController.enableLabyrinthTurns)
         {
             Vector3 targetPosition = player.position - (player.forward * currentDistanceBehind);
-            targetPosition.y = transform.position.y;
+            targetPosition.y = targetY;
             transform.position = Vector3.Lerp(transform.position, targetPosition, catchUpSpeed * Time.deltaTime);
             transform.rotation = Quaternion.Slerp(transform.rotation, player.rotation, catchUpSpeed * Time.deltaTime);
         }
         else
         {
-            Vector3 targetPosition = new Vector3(player.position.x, transform.position.y, player.position.z - currentDistanceBehind);
+            Vector3 targetPosition = new Vector3(player.position.x, targetY, player.position.z - currentDistanceBehind);
             transform.position = Vector3.Lerp(transform.position, targetPosition, catchUpSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, player.rotation, catchUpSpeed * Time.deltaTime);
         }
 
         if (currentDistanceBehind <= 0.8f)
@@ -200,8 +206,18 @@ public class FOMOController : MonoBehaviour
         if (isCatching) return;
 
         timeSinceLastMistake = 0f;
-        currentDistanceBehind -= penaltyDistance;
-        currentDistanceBehind = Mathf.Max(currentDistanceBehind, 0f);
+        // Bring FOMO bot to 1.85m directly behind the player so its head and shoulders are prominently framed in the camera view
+        currentDistanceBehind = Mathf.Max(1.85f, currentDistanceBehind - 1.4f);
+
+        if (CameraShake.Instance != null)
+        {
+            CameraShake.Instance.ShakeCamera(0.3f, 0.2f);
+        }
+
+        if (SoundManager.Instance != null && SoundManager.Instance.fomoDescendSound != null)
+        {
+            SoundManager.Instance.PlaySFX(SoundManager.Instance.fomoDescendSound);
+        }
     }
 
     private IEnumerator CatchPlayerSequence()

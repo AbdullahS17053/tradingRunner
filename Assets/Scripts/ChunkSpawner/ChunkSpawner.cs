@@ -332,15 +332,29 @@ public class ChunkSpawner : MonoBehaviour
 
         Quaternion spawnWorldRot = chunk.transform.rotation * Quaternion.Euler(0f, 180f, 0f); // Face towards oncoming player
 
-        // Always spawn enemy strictly in the MIDDLE lane (center lane, local X = 0f)
+        // Spawn enemy directly in the oncoming player's lane
+        float playerLaneX = 0f;
+        if (RunnerController.Instance != null)
+        {
+            playerLaneX = RunnerController.Instance.TargetXPosition;
+        }
+        else
+        {
+            RunnerController runner = Object.FindFirstObjectByType<RunnerController>();
+            if (runner != null)
+            {
+                playerLaneX = runner.TargetXPosition;
+            }
+        }
+
         float groundY = chunk.transform.position.y;
         if (chunk.coinsParent != null && chunk.coinsParent.childCount > 0)
         {
             groundY = Mathf.Max(groundY, chunk.coinsParent.GetChild(0).position.y - 0.35f);
         }
 
-        // Center lane: lateral local X = 0f (exact middle of track), 16m forward on the chunk
-        Vector3 spawnWorldPos = chunk.transform.TransformPoint(new Vector3(0f, 0f, 16f));
+        // Spawn 16m forward on the chunk in the player's exact oncoming lane
+        Vector3 spawnWorldPos = chunk.transform.TransformPoint(new Vector3(playerLaneX, 0f, 16f));
         spawnWorldPos.y = groundY;
 
         // If any coins are placed in the center lane at this position, deactivate them so they don't clip through the enemy

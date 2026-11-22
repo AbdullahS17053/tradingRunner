@@ -257,6 +257,7 @@ namespace RunnerForex.Castle
                     bot.gameObject.SetActive(true);
                     bot.telegraphDistance = 22.0f;
                     bot.beamReach = 45.0f;
+                    bot.AlignToPlayerLane();
                     frontGuardBot = bot.gameObject;
 
                     // Clean up any duplicate base FOMOController components on the front guard bot
@@ -361,11 +362,10 @@ namespace RunnerForex.Castle
             // 1. Screen Fade Overlay (kept static in hierarchy, disabled when clear)
             if (fadeCanvasGroup == null)
             {
-                GameObject existingFade = GameObject.Find("CastleScreenFadeCanvas");
-                if (existingFade == null) existingFade = GameObject.Find("CastleScreenFadeOverlay");
+                GameObject existingFade = FindObjectInScene("CastleScreenFadeCanvas") ?? FindObjectInScene("CastleScreenFadeOverlay");
                 if (existingFade == null)
                 {
-                    GameObject hud = GameObject.Find("CastleGameplayHUD");
+                    GameObject hud = FindObjectInScene("CastleGameplayHUD");
                     if (hud != null)
                     {
                         Transform found = hud.transform.Find("CastleScreenFadeOverlay");
@@ -414,19 +414,7 @@ namespace RunnerForex.Castle
             // 2. Real Castle Gate & Golden Doors
             if (goldenDoorsTransform == null)
             {
-                GameObject gateObj = GameObject.Find("SM_Bld_Castle_Wall_Gate_01");
-                if (gateObj == null)
-                {
-                    foreach (var t in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-                    {
-                        if (t.name.Contains("Wall_Gate_01") || t.name.Contains("GoldenDoors"))
-                        {
-                            gateObj = t.gameObject;
-                            break;
-                        }
-                    }
-                }
-
+                GameObject gateObj = FindObjectInScene("GoldenDoors") ?? FindObjectInScene("SM_Bld_Castle_Wall_Gate_01");
                 if (gateObj != null)
                 {
                     goldenDoorsTransform = gateObj.transform;
@@ -459,19 +447,19 @@ namespace RunnerForex.Castle
             // 3. Computer Room Lane & Chair
             if (chairSeatTransform == null)
             {
-                GameObject chairObj = GameObject.Find("SM_Prop_Chair_Fancy_01");
+                GameObject chairObj = FindObjectInScene("SM_Prop_Chair_Fancy_01");
                 if (chairObj != null) chairSeatTransform = chairObj.transform;
             }
 
             if (computerCameraPosition == null)
             {
-                GameObject camPosObj = GameObject.Find("ComputerCameraView");
+                GameObject camPosObj = FindObjectInScene("ComputerCameraView");
                 if (camPosObj != null) computerCameraPosition = camPosObj.transform;
             }
 
             if (computerLaneStartPoint == null)
             {
-                GameObject laneStartObj = GameObject.Find("ComputerLaneStartPoint");
+                GameObject laneStartObj = FindObjectInScene("ComputerLaneStartPoint");
                 if (laneStartObj == null)
                 {
                     laneStartObj = new GameObject("ComputerLaneStartPoint");
@@ -484,7 +472,7 @@ namespace RunnerForex.Castle
             // 4. Lottery Box & Portal (at local X = 1.6, Y = 0, Z = 74.5)
             if (lotteryBoxTransform == null)
             {
-                GameObject boxObj = GameObject.Find("LotteryBox");
+                GameObject boxObj = FindObjectInScene("LotteryBox");
                 if (boxObj != null)
                 {
                     lotteryBoxTransform = boxObj.transform;
@@ -509,7 +497,7 @@ namespace RunnerForex.Castle
 
             if (lotteryBoxCameraView == null)
             {
-                GameObject viewObj = GameObject.Find("LotteryBoxCameraView");
+                GameObject viewObj = FindObjectInScene("LotteryBoxCameraView");
                 if (viewObj == null)
                 {
                     viewObj = new GameObject("LotteryBoxCameraView");
@@ -522,7 +510,7 @@ namespace RunnerForex.Castle
 
             if (lotteryBoxPortal == null)
             {
-                GameObject portalObj = GameObject.Find("LotteryBoxPortal");
+                GameObject portalObj = FindObjectInScene("LotteryBoxPortal");
                 if (portalObj != null)
                 {
                     lotteryBoxPortal = portalObj;
@@ -537,6 +525,23 @@ namespace RunnerForex.Castle
             {
                 lotteryBoxPortal.SetActive(false);
             }
+        }
+
+        private GameObject FindObjectInScene(string objName)
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (scene.isLoaded)
+            {
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    var trs = root.GetComponentsInChildren<Transform>(true);
+                    foreach (var t in trs)
+                    {
+                        if (t.name == objName) return t.gameObject;
+                    }
+                }
+            }
+            return GameObject.Find(objName);
         }
 
         private Transform CreateGoldenDoors(Vector3 localPos)
@@ -940,6 +945,12 @@ namespace RunnerForex.Castle
                 activeCamera.transform.rotation = computerCameraPosition.rotation;
             }
 
+            // Duck background music slightly so typing and quiz audio are clear
+            if (SoundManager.Instance != null && SoundManager.Instance.musicSource != null)
+            {
+                SoundManager.Instance.musicSource.volume = SoundManager.Instance.GetMusicVolume() * 0.3f;
+            }
+
             // Play typing audio loop
             if (computerAudioSource != null)
             {
@@ -983,6 +994,12 @@ namespace RunnerForex.Castle
 
         private IEnumerator LotteryBoxPortalCinematicRoutine()
         {
+            // Restore background music
+            if (SoundManager.Instance != null && SoundManager.Instance.musicSource != null)
+            {
+                SoundManager.Instance.musicSource.volume = SoundManager.Instance.GetMusicVolume();
+            }
+
             // 1. Stop computer typing audio
             if (computerAudioSource != null && computerAudioSource.isPlaying)
             {

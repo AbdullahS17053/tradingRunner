@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.0059606433, g: 0.003715619, b: 0.014231656, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1418,6 +1418,7 @@ MonoBehaviour:
   maxSpeedMultiplier: 5
   hudDistanceText: {fileID: 92304638}
   hudTradesText: {fileID: 0}
+  hudTPText: {fileID: 0}
   gameOverPanel: {fileID: 903854166}
   finalDistanceText: {fileID: 903854165}
   finalTradesText: {fileID: 903854164}
@@ -6648,6 +6649,7 @@ RectTransform:
   m_Children:
   - {fileID: 1531667170}
   - {fileID: 631370546}
+  - {fileID: 918009000000000002}
   m_Father: {fileID: 1445796967}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -6673,7 +6675,10 @@ MonoBehaviour:
   animatedPanel: {fileID: 0}
   tpCountText: {fileID: 1279247978}
   distanceText: {fileID: 595614754}
+  tradesText: {fileID: 0}
   tpBadgeShine: {fileID: 0}
+  coinsText: {fileID: 0}
+  gemsText: {fileID: 0}
   pauseButton: {fileID: 1903164710}
 --- !u!114 &1234374048
 MonoBehaviour:
@@ -11003,6 +11008,35 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2106312995}
   m_CullTransparentMesh: 1
+--- !u!1001 &918009000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1234374046}
+    m_Modifications:
+    - target: {fileID: 918001000000000001, guid: 81a9425c778641979b0071da50937c51,
+        type: 3}
+      propertyPath: m_Name
+      value: GemReviveDialog
+      objectReference: {fileID: 0}
+    - target: {fileID: 918001000000000001, guid: 81a9425c778641979b0071da50937c51,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 81a9425c778641979b0071da50937c51, type: 3}
+--- !u!224 &918009000000000002 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 918001000000000002, guid: 81a9425c778641979b0071da50937c51,
+    type: 3}
+  m_PrefabInstance: {fileID: 918009000000000001}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

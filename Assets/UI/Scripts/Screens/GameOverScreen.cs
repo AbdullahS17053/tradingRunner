@@ -55,17 +55,29 @@ namespace SciFiUI.Screens
 
         private void OnRestartClicked()
         {
-            if (UIManager.Instance != null)
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.RestartGame();
+            }
+            else if (UIManager.Instance != null)
             {
                 UIManager.Instance.RestartGame();
+            }
+            else
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex);
             }
         }
 
         private void OnMainMenuClicked()
         {
-            if (UIManager.Instance != null)
+            if (LevelLoader.Instance != null)
             {
-                UIManager.Instance.OpenMainMenu();
+                LevelLoader.Instance.LoadScene(1); // 1 = MainMenu
+            }
+            else
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene(1);
             }
         }
     }

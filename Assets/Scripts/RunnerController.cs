@@ -457,6 +457,12 @@ public class RunnerController : MonoBehaviour
                     // Shield absorbed the hit and gave temporary grace
                     if (bot != null) bot.DestroyBot();
                     else other.gameObject.SetActive(false);
+
+                    FOMOController fomoChaser = Object.FindFirstObjectByType<FOMOController>();
+                    if (fomoChaser != null && fomoChaser.fomoMode == FOMOController.FOMOMode.NormalFOMO)
+                    {
+                        fomoChaser.PunishPlayer();
+                    }
                     return;
                 }
             }
@@ -473,6 +479,12 @@ public class RunnerController : MonoBehaviour
                     // Successfully jumped over attack!
                     return;
                 }
+            }
+
+            FOMOController fomoWarning = Object.FindFirstObjectByType<FOMOController>();
+            if (fomoWarning != null && fomoWarning.fomoMode == FOMOController.FOMOMode.NormalFOMO)
+            {
+                fomoWarning.PunishPlayer();
             }
 
             Die();

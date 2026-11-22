@@ -30,6 +30,7 @@ public class GameManager : MonoBehaviour
     [Header("Active HUD UI")]
     public TextMeshProUGUI hudDistanceText;
     public TextMeshProUGUI hudTradesText;
+    public TextMeshProUGUI hudTPText;
 
     [Header("Game Over UI References")]
     public GameObject gameOverPanel;
@@ -37,6 +38,21 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI finalTradesText;
     public TextMeshProUGUI finalTPText;
     public TextMeshProUGUI highScoreText;
+
+    public const string COINS_KEY = "PlayerCoins_Total";
+
+    public static int GetTotalCoins()
+    {
+        return PlayerPrefs.GetInt(COINS_KEY, 0);
+    }
+
+    public static void AddTotalCoins(int amount)
+    {
+        int current = GetTotalCoins();
+        current += amount;
+        PlayerPrefs.SetInt(COINS_KEY, current);
+        PlayerPrefs.Save();
+    }
 
     public bool isGameOver = false;
     private bool gameStarted = false;
@@ -61,6 +77,9 @@ public class GameManager : MonoBehaviour
         Time.timeScale = 1.0f;
         Time.fixedDeltaTime = 0.02f;
 
+        // Auto-resolve HUD UI references if not explicitly wired in Inspector
+        ResolveHUDReferences();
+
         if (isLoopingRun)
         {
             takeProfit = carryOverTakeProfit;
@@ -79,6 +98,7 @@ public class GameManager : MonoBehaviour
 
         UpdateTradesUI();
         UpdateDistanceUI();
+        UpdateTakeProfitUI();
 
         if (gameOverPanel != null)
         {
@@ -100,6 +120,67 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void ResolveHUDReferences()
+    {
+        if (hudDistanceText == null)
+        {
+            var go = GameObject.Find("DistanceText");
+            if (go != null) hudDistanceText = go.GetComponent<TextMeshProUGUI>();
+        }
+
+        if (hudTradesText == null)
+        {
+            var go = GameObject.Find("TradesText") ?? GameObject.Find("GoodTradesText") ?? GameObject.Find("ScoreText");
+            if (go != null) hudTradesText = go.GetComponent<TextMeshProUGUI>();
+        }
+
+        if (hudTPText == null)
+        {
+            var go = GameObject.Find("TPCount") ?? GameObject.Find("TPText") ?? GameObject.Find("CoinsText") ?? GameObject.Find("CoinText");
+            if (go != null) hudTPText = go.GetComponent<TextMeshProUGUI>();
+        }
+
+        if (gameOverPanel == null)
+        {
+            var screen = Object.FindFirstObjectByType<SciFiUI.Screens.GameOverScreen>(FindObjectsInactive.Include);
+            if (screen != null)
+            {
+                gameOverPanel = screen.gameObject;
+            }
+            else
+            {
+                var scene = SceneManager.GetActiveScene();
+                if (scene.isLoaded)
+                {
+                    foreach (var root in scene.GetRootGameObjects())
+                    {
+                        var trs = root.GetComponentsInChildren<Transform>(true);
+                        foreach (var t in trs)
+                        {
+                            if (t.name == "GameOverUI" || t.name == "GameOverPanel")
+                            {
+                                gameOverPanel = t.gameObject;
+                                break;
+                            }
+                        }
+                        if (gameOverPanel != null) break;
+                    }
+                }
+            }
+
+            if (gameOverPanel == null)
+            {
+                var go = GameObject.Find("GameOverUI") ?? GameObject.Find("GameOverPanel");
+                if (go != null) gameOverPanel = go;
+            }
+
+            if (gameOverPanel != null && !isGameOver)
+            {
+                gameOverPanel.SetActive(false);
+            }
+        }
+    }
+
     private void Update()
     {
         if (isGameOver || !gameStarted || isCaptureSequenceActive) return;
@@ -113,9 +194,10 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void AddTakeProfit()
+    public void AddTakeProfit(int amount = 1)
     {
-        takeProfit++;
+        takeProfit += amount;
+        UpdateTakeProfitUI();
     }
 
     public void AddCorrectTrade()
@@ -126,9 +208,14 @@ public class GameManager : MonoBehaviour
 
     private void UpdateDistanceUI()
     {
+        int distInt = Mathf.FloorToInt(distanceRun);
         if (hudDistanceText != null)
         {
-            hudDistanceText.text = $"{Mathf.FloorToInt(distanceRun)}m";
+            hudDistanceText.text = $"{distInt}m";
+        }
+        if (SciFiUI.Screens.GameHUDScreen.Instance != null)
+        {
+            SciFiUI.Screens.GameHUDScreen.Instance.UpdateHUD(takeProfit, distInt);
         }
     }
 
@@ -137,6 +224,23 @@ public class GameManager : MonoBehaviour
         if (hudTradesText != null)
         {
             hudTradesText.text = $"{correctTrades}";
+        }
+        if (SciFiUI.Screens.GameHUDScreen.Instance != null)
+        {
+            SciFiUI.Screens.GameHUDScreen.Instance.UpdateTrades(correctTrades);
+        }
+    }
+
+    public void UpdateTakeProfitUI()
+    {
+        if (hudTPText != null)
+        {
+            hudTPText.text = $"{takeProfit}";
+        }
+        if (SciFiUI.Screens.GameHUDScreen.Instance != null)
+        {
+            SciFiUI.Screens.GameHUDScreen.Instance.UpdateHUD(takeProfit, Mathf.FloorToInt(distanceRun));
+            SciFiUI.Screens.GameHUDScreen.Instance.TriggerTPGainEffect();
         }
     }
 
@@ -201,10 +305,54 @@ public class GameManager : MonoBehaviour
             PlayerPrefs.Save();
         }
 
+        // 100% Offline Persistence: Persist all coins collected during this run
+        if (takeProfit > 0)
+        {
+            AddTotalCoins(takeProfit);
+        }
+
+        // Auto-resolve GameOverUI from scene hierarchy
+        if (gameOverPanel == null)
+        {
+            ResolveHUDReferences();
+        }
+
+        if (gameOverPanel == null)
+        {
+            GameObject prefab = Resources.Load<GameObject>("GameOverUI");
+            if (prefab != null)
+            {
+                Canvas canvas = Object.FindFirstObjectByType<Canvas>();
+                if (canvas != null)
+                {
+                    gameOverPanel = Instantiate(prefab, canvas.transform);
+                    var rt = gameOverPanel.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.anchorMin = Vector2.zero;
+                        rt.anchorMax = Vector2.one;
+                        rt.offsetMin = Vector2.zero;
+                        rt.offsetMax = Vector2.zero;
+                    }
+                }
+            }
+        }
+
         if (gameOverPanel != null)
         {
             gameOverPanel.SetActive(true);
-            gameoverAnimator.Play("Game Over Panel Enter");
+
+            var screen = gameOverPanel.GetComponent<SciFiUI.Screens.GameOverScreen>() ?? gameOverPanel.GetComponentInChildren<SciFiUI.Screens.GameOverScreen>(true);
+            if (screen != null)
+            {
+                screen.SetRunData(Mathf.FloorToInt(distanceRun), takeProfit, highScore);
+                screen.Show();
+            }
+
+            if (gameoverAnimator != null)
+            {
+                gameoverAnimator.Play("Game Over Panel Enter");
+            }
         }
 
         if (finalDistanceText != null) finalDistanceText.text = $"{Mathf.FloorToInt(distanceRun)}m";

@@ -155,11 +155,12 @@ namespace SciFiUI.Screens
             if (cloudSaveButton != null) cloudSaveButton.onClick.AddListener(OnCloudSaveClicked);
             if (exitButton != null) exitButton.onClick.AddListener(OnExitClicked);
 
-            // 7. Ensure currencies container is active
+            // 7. Ensure currencies container is active and populate current balances
             if (currenciesContainer != null)
             {
                 currenciesContainer.SetActive(true);
             }
+            UpdateCurrenciesDisplay();
 
             // 8. Initialize audio states
             if (SoundManager.Instance != null)
@@ -168,6 +169,32 @@ namespace SciFiUI.Screens
                 isMusicMuted = SoundManager.Instance.GetMusicVolume() <= 0.01f;
             }
             UpdateAudioIcons();
+        }
+
+        private void OnEnable()
+        {
+            UpdateCurrenciesDisplay();
+            if (SoundManager.Instance != null)
+            {
+                isSoundMuted = SoundManager.Instance.GetSFXVolume() <= 0.01f;
+                isMusicMuted = SoundManager.Instance.GetMusicVolume() <= 0.01f;
+            }
+            UpdateAudioIcons();
+        }
+
+        public void UpdateCurrenciesDisplay()
+        {
+            int coins = GameManager.GetTotalCoins();
+            int gems = GemReviveManager.Instance != null ? GemReviveManager.Instance.GetGems() : PlayerPrefs.GetInt("PlayerGems_Total", 3500);
+
+            if (coinsText != null)
+            {
+                coinsText.text = coins.ToString("N0");
+            }
+            if (gemsText != null)
+            {
+                gemsText.text = gems.ToString("N0");
+            }
         }
 
         public void OnPlayClicked()
@@ -284,6 +311,14 @@ namespace SciFiUI.Screens
 
         public void Show(bool immediate = false)
         {
+            UpdateCurrenciesDisplay();
+            if (SoundManager.Instance != null)
+            {
+                isSoundMuted = SoundManager.Instance.GetSFXVolume() <= 0.01f;
+                isMusicMuted = SoundManager.Instance.GetMusicVolume() <= 0.01f;
+            }
+            UpdateAudioIcons();
+
             if (menuCanvasGroup != null)
             {
                 menuCanvasGroup.alpha = 1f;
@@ -361,6 +396,8 @@ namespace SciFiUI.Screens
             Debug.Log("[MainMenu] Forex Quiz clicked");
             if (SoundManager.Instance != null && SoundManager.Instance.uiClickSound != null)
                 SoundManager.Instance.sfxSource?.PlayOneShot(SoundManager.Instance.uiClickSound);
+
+            RunnerForex.Castle.ForexPatternsPanel.OpenPanel();
         }
 
         private void OnSettingsClicked()

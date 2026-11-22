@@ -49,6 +49,77 @@ public class GemReviveManager : MonoBehaviour
         }
     }
 
+    private void Start()
+    {
+        ResolveHierarchyReferences();
+    }
+
+    public void ResolveHierarchyReferences()
+    {
+        if (reviveDialogCanvas == null)
+        {
+            var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+            if (scene.isLoaded)
+            {
+                foreach (var root in scene.GetRootGameObjects())
+                {
+                    var trs = root.GetComponentsInChildren<Transform>(true);
+                    foreach (var t in trs)
+                    {
+                        if (t.name == "GemReviveDialog" || t.name == "ReviveDialog" || t.name == "RevivePanel")
+                        {
+                            reviveDialogCanvas = t.gameObject;
+                            break;
+                        }
+                    }
+                    if (reviveDialogCanvas != null) break;
+                }
+            }
+
+            if (reviveDialogCanvas == null)
+            {
+                var go = GameObject.Find("GemReviveDialog") ?? GameObject.Find("ReviveDialog") ?? GameObject.Find("RevivePanel");
+                if (go != null)
+                {
+                    reviveDialogCanvas = go;
+                }
+            }
+        }
+
+        if (reviveDialogCanvas != null)
+        {
+            var allTexts = reviveDialogCanvas.GetComponentsInChildren<TextMeshProUGUI>(true);
+            foreach (var txt in allTexts)
+            {
+                if (txt.name == "GemsInfo" || (txt.transform.parent != null && txt.transform.parent.name == "GemsInfo"))
+                    gemsBalanceText = txt;
+                else if (txt.name == "Countdown" || (txt.transform.parent != null && txt.transform.parent.name == "Countdown"))
+                    countdownText = txt;
+                else if (txt.name == "Text" && txt.transform.parent != null && txt.transform.parent.name == "BtnRevive")
+                    reviveCostText = txt;
+            }
+
+            var allButtons = reviveDialogCanvas.GetComponentsInChildren<Button>(true);
+            foreach (var btn in allButtons)
+            {
+                if (btn.name == "BtnRevive")
+                {
+                    reviveButton = btn;
+                    reviveButton.onClick.RemoveAllListeners();
+                    reviveButton.onClick.AddListener(OnReviveClicked);
+                }
+                else if (btn.name == "BtnEndRun" || btn.name == "BtnCancel")
+                {
+                    endRunButton = btn;
+                    endRunButton.onClick.RemoveAllListeners();
+                    endRunButton.onClick.AddListener(OnEndRunClicked);
+                }
+            }
+
+            reviveDialogCanvas.SetActive(false);
+        }
+    }
+
     public int GetGems()
     {
         return PlayerPrefs.GetInt(GEMS_KEY, startingGems);
@@ -104,6 +175,11 @@ public class GemReviveManager : MonoBehaviour
         if (revivesUsedInCurrentRun >= maxRevivesPerRun)
         {
             return false; // Reached max revives
+        }
+
+        if (reviveDialogCanvas == null)
+        {
+            ResolveHierarchyReferences();
         }
 
         if (reviveDialogCanvas == null)

@@ -123,6 +123,7 @@ namespace SciFiUI.Screens
         private void OnBackClicked()
         {
             PlayerPrefs.Save();
+            Time.timeScale = 1.0f;
             if (UIManager.Instance != null)
             {
                 UIManager.Instance.CloseSettings();

@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.005987256, g: 0.0037847296, b: 0.014264495, a: 1}
+  m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -3184,6 +3184,8 @@ RectTransform:
   m_Children:
   - {fileID: 179058215}
   - {fileID: 462873473}
+  - {fileID: 918008000000000004}
+  - {fileID: 918008000000000003}
   m_Father: {fileID: 1908818085}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -3209,7 +3211,10 @@ MonoBehaviour:
   animatedPanel: {fileID: 0}
   tpCountText: {fileID: 1088929216}
   distanceText: {fileID: 951531897}
+  tradesText: {fileID: 0}
   tpBadgeShine: {fileID: 0}
+  coinsText: {fileID: 0}
+  gemsText: {fileID: 0}
   pauseButton: {fileID: 114578769}
 --- !u!114 &426176027
 MonoBehaviour:
@@ -10048,6 +10053,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e761aa41cb4143923910d7e7f7b1bc51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fomoMode: 0
   player: {fileID: 7552370050130530323}
   playerAnimator: {fileID: 0}
   currentDistanceBehind: 4
@@ -10056,9 +10062,6 @@ MonoBehaviour:
   maxDistanceBehind: 3.5
   recoveryDelay: 4
   recoveryRate: 0.5
-  fomoLaser: {fileID: 274040035}
-  fomoLaserOrigin: {fileID: 274040034}
-  fomoAnimator: {fileID: 1335521238}
   ascendHeight: 15
   ascendDuration: 1
   dropHeight: 15
@@ -10067,6 +10070,16 @@ MonoBehaviour:
   hoverLevitationHeight: 1
   captureToLaserDelay: 0.5
   laserFadeDuration: 0.3
+  telegraphDistance: 28
+  beamChargeDuration: 1.6
+  beamFireDuration: 0.3
+  beamWidth: 0.35
+  beamReach: 45
+  targetingLaser: {fileID: 0}
+  telegraphLight: {fileID: 0}
+  fomoLaser: {fileID: 274040035}
+  fomoLaserOrigin: {fileID: 274040034}
+  fomoAnimator: {fileID: 1335521238}
   fomoAudioSource: {fileID: 0}
   ascendSound: {fileID: 0}
   descendSound: {fileID: 0}
@@ -13339,6 +13352,10 @@ MonoBehaviour:
     type: 3}
   speedBoostPowerUpPrefab: {fileID: 6588334547211602384, guid: 934e0d03b40039c43bfbf3a9813c3d50,
     type: 3}
+  enableEnemySpawning: 1
+  enemyInterval: 3
+  enemyStartChunk: 2
+  enemyPrefab: {fileID: 0}
 --- !u!1 &1742112176
 GameObject:
   m_ObjectHideFlags: 0
@@ -13906,6 +13923,7 @@ MonoBehaviour:
   maxSpeedMultiplier: 5
   hudDistanceText: {fileID: 916169142}
   hudTradesText: {fileID: 0}
+  hudTPText: {fileID: 0}
   gameOverPanel: {fileID: 490487355}
   finalDistanceText: {fileID: 1375039226}
   finalTradesText: {fileID: 1167480232}
@@ -16715,13 +16733,39 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1c2d3e4f5061728394a5b6c7d8e9f11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  transitionDuration: 0.35
-  useScalePunch: 0
-  punchStartScale: {x: 0.85, y: 0.85, z: 1}
-  animatedPanel: {fileID: 1562520748}
+  menuCamera: {fileID: 0}
+  player: {fileID: 0}
+  playerAnimator: {fileID: 0}
+  runnerController: {fileID: 0}
+  menuCanvasGroup: {fileID: 0}
+  menuCamPosition: {x: 0.694, y: 0.306, z: 11.879}
+  menuCamRotation: {x: -8.387, y: 562.243, z: 0}
+  runnerCamOffset: {x: 0, y: 2.467, z: -3.53}
+  runnerCamRotation: {x: 15, y: 0, z: 0}
   playButton: {fileID: 48276464}
-  exitButton: {fileID: 845272964}
+  charactersButton: {fileID: 0}
+  storeButton: {fileID: 0}
+  rankingButton: {fileID: 0}
+  forexQuizButton: {fileID: 0}
   settingsButton: {fileID: 2141920412}
+  exitButton: {fileID: 845272964}
+  soundButton: {fileID: 0}
+  soundIcon: {fileID: 0}
+  musicButton: {fileID: 0}
+  musicIcon: {fileID: 0}
+  cloudSaveButton: {fileID: 0}
+  soundOnSprite: {fileID: 0}
+  soundOffSprite: {fileID: 0}
+  musicOnSprite: {fileID: 0}
+  musicOffSprite: {fileID: 0}
+  currenciesContainer: {fileID: 0}
+  coinsText: {fileID: 0}
+  gemsText: {fileID: 0}
+  cameraTransitionDuration: 1.2
+  standCompletionWait: 0.15
+  targetGameplaySceneName: City
+  targetGameplaySceneIndex: 0
+  settingsPanel: {fileID: 0}
 --- !u!225 &2033737961
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -17760,6 +17804,62 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2141920410}
   m_CullTransparentMesh: 1
+--- !u!1001 &918008000000000001
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 426176025}
+    m_Modifications:
+    - target: {fileID: 918001000000000001, guid: 81a9425c778641979b0071da50937c51,
+        type: 3}
+      propertyPath: m_Name
+      value: GemReviveDialog
+      objectReference: {fileID: 0}
+    - target: {fileID: 918001000000000001, guid: 81a9425c778641979b0071da50937c51,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 81a9425c778641979b0071da50937c51, type: 3}
+--- !u!1001 &918008000000000002
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 426176025}
+    m_Modifications:
+    - target: {fileID: 793519256, guid: 0ae4957731d480d0491f883a240d1b19, type: 3}
+      propertyPath: m_Name
+      value: GameOverUI
+      objectReference: {fileID: 0}
+    - target: {fileID: 793519256, guid: 0ae4957731d480d0491f883a240d1b19, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0ae4957731d480d0491f883a240d1b19, type: 3}
+--- !u!224 &918008000000000003 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 918001000000000002, guid: 81a9425c778641979b0071da50937c51,
+    type: 3}
+  m_PrefabInstance: {fileID: 918008000000000001}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &918008000000000004 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 8698227973266427417, guid: 0ae4957731d480d0491f883a240d1b19,
+    type: 3}
+  m_PrefabInstance: {fileID: 918008000000000002}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &7552370050130530322
 PrefabInstance:
   m_ObjectHideFlags: 0

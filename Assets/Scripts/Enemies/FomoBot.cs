@@ -69,7 +69,42 @@ public class FomoBot : FOMOController
         if (botCollider != null) botCollider.isTrigger = true;
         if (botAnimator == null) botAnimator = fomoAnimator;
 
-        currentLaneX = transform.position.x;
+        AlignToPlayerLane();
+    }
+
+    private void OnEnable()
+    {
+        AlignToPlayerLane();
+    }
+
+    public void AlignToPlayerLane()
+    {
+        if (runnerController == null)
+        {
+            runnerController = RunnerController.Instance ?? Object.FindFirstObjectByType<RunnerController>();
+        }
+
+        if (runnerController != null)
+        {
+            float targetLaneX = runnerController.TargetXPosition;
+            if (transform.parent != null)
+            {
+                Vector3 localPos = transform.localPosition;
+                localPos.x = targetLaneX;
+                transform.localPosition = localPos;
+            }
+            else
+            {
+                Vector3 worldPos = transform.position;
+                worldPos.x = targetLaneX;
+                transform.position = worldPos;
+            }
+            currentLaneX = transform.position.x;
+        }
+        else
+        {
+            currentLaneX = transform.position.x;
+        }
     }
 
     protected override void Update()

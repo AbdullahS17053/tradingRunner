@@ -503,11 +503,12 @@ namespace RunnerForex.Castle
             if (feedbackModal != null) feedbackModal.SetActive(false);
             if (victoryModal != null) victoryModal.SetActive(true);
 
-            // 1. Award 1,000 Coins
+            // 1. Award 1,000 Coins (In-memory + Permanent Local PlayerPrefs)
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.takeProfit += rewardCoins;
+                GameManager.Instance.AddTakeProfit(rewardCoins);
             }
+            GameManager.AddTotalCoins(rewardCoins);
 
             // 2. Play Reward Coin Burst & Sound
             if (coinRewardParticles != null) coinRewardParticles.Play();
