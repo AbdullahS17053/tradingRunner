@@ -142,10 +142,25 @@ public class GameManager : MonoBehaviour
 
         if (gameOverPanel == null)
         {
-            var screen = Object.FindFirstObjectByType<SciFiUI.Screens.GameOverScreen>(FindObjectsInactive.Include);
-            if (screen != null)
+            var screens = Object.FindObjectsByType<SciFiUI.Screens.GameOverScreen>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (screens != null && screens.Length > 0)
             {
-                gameOverPanel = screen.gameObject;
+                SciFiUI.Screens.GameOverScreen bestScreen = null;
+                foreach (var s in screens)
+                {
+                    // Prefer a GameOverScreen under an active gameplay HUD or active canvas
+                    if (s.transform.parent != null && s.transform.parent.gameObject.activeInHierarchy)
+                    {
+                        bestScreen = s;
+                        break;
+                    }
+                    if (s.transform.parent != null && s.transform.parent.name.Contains("HUD"))
+                    {
+                        bestScreen = s;
+                    }
+                }
+                if (bestScreen == null) bestScreen = screens[0];
+                gameOverPanel = bestScreen.gameObject;
             }
             else
             {
@@ -340,6 +355,16 @@ public class GameManager : MonoBehaviour
 
         if (gameOverPanel != null)
         {
+            Transform p = gameOverPanel.transform.parent;
+            while (p != null)
+            {
+                if (!p.gameObject.activeSelf)
+                {
+                    p.gameObject.SetActive(true);
+                }
+                p = p.parent;
+            }
+
             gameOverPanel.SetActive(true);
 
             var screen = gameOverPanel.GetComponent<SciFiUI.Screens.GameOverScreen>() ?? gameOverPanel.GetComponentInChildren<SciFiUI.Screens.GameOverScreen>(true);

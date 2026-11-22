@@ -36,7 +36,7 @@ namespace SciFiUI.Core
 
             if (_transitionCoroutine != null) StopCoroutine(_transitionCoroutine);
 
-            if (immediate)
+            if (immediate || !gameObject.activeInHierarchy)
             {
                 if (_canvasGroup != null)
                 {

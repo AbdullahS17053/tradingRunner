@@ -3833,14 +3833,14 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 505914034}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c16abfc06169ede1193039225bd3c456, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  verticalBend: 0
-  horizontalBend: 0
-  randomizeHorizontal: 0
+  verticalBend: -0.00184
+  horizontalBend: 0.0006
+  randomizeHorizontal: 1
   minHorizontalBend: -0.0009
   maxHorizontalBend: 0.0009
   changeInterval: 6
@@ -13338,7 +13338,7 @@ MonoBehaviour:
     weight: 1
   - prefab: {fileID: 833579557855476302, guid: 7270f10439a3fac4a952a8d2654eefb8, type: 3}
     weight: 1
-  concurrentChunks: 6
+  concurrentChunks: 7
   despawnDistance: 150
   enableLabyrinthTurns: 0
   enablePowerUpSpawning: 1

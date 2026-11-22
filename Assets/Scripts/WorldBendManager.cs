@@ -24,8 +24,25 @@ public class WorldBendController : MonoBehaviour
     private static readonly int VerticalBendID = Shader.PropertyToID("_VerticalBend");
     private static readonly int HorizontalBendID = Shader.PropertyToID("_HorizontalBend");
 
+    private void Awake()
+    {
+        ApplyBendToShader();
+    }
+
+    private void OnEnable()
+    {
+        ApplyBendToShader();
+    }
+
+    public void ApplyBendToShader()
+    {
+        Shader.SetGlobalFloat(VerticalBendID, verticalBend);
+        Shader.SetGlobalFloat(HorizontalBendID, horizontalBend);
+    }
+
     private void Start()
     {
+        ApplyBendToShader();
         if (Application.isPlaying)
         {
             targetHorizontalBend = horizontalBend;
@@ -48,8 +65,7 @@ public class WorldBendController : MonoBehaviour
             horizontalBend = Mathf.Lerp(horizontalBend, targetHorizontalBend, Time.deltaTime * bendTransitionSpeed);
         }
 
-        Shader.SetGlobalFloat(VerticalBendID, verticalBend);
-        Shader.SetGlobalFloat(HorizontalBendID, horizontalBend);
+        ApplyBendToShader();
     }
 
     private void PickNewBendDirection()
