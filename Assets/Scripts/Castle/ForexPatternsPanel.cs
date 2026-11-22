@@ -43,6 +43,7 @@ namespace RunnerForex.Castle
         private List<ForexPatternCardUI> spawnedCards = new List<ForexPatternCardUI>();
         private PatternBias? activeFilter = null; // null = all
         private ForexPatternInfo selectedPattern = null;
+        private bool wasActiveOnAwake = false;
 
         private void Awake()
         {
@@ -54,7 +55,15 @@ namespace RunnerForex.Castle
             }
 
             if (panelRoot == null) panelRoot = gameObject;
+            wasActiveOnAwake = panelRoot.activeSelf;
             EnsureUIHierarchy();
+            EnsureGridSettings();
+        }
+
+        private void OnEnable()
+        {
+            EnsureGridSettings();
+            BuildCardsGrid();
         }
 
         private void Start()
@@ -63,7 +72,10 @@ namespace RunnerForex.Castle
             BuildCardsGrid();
 
             if (detailModalRoot != null) detailModalRoot.SetActive(false);
-            if (panelRoot != null) panelRoot.SetActive(false); // Closed by default until opened
+            if (!wasActiveOnAwake && panelRoot != null)
+            {
+                panelRoot.SetActive(false); // Closed by default until opened if started inactive
+            }
         }
 
         public static void OpenPanel()
@@ -83,6 +95,8 @@ namespace RunnerForex.Castle
         public void Show()
         {
             if (panelRoot != null) panelRoot.SetActive(true);
+            EnsureGridSettings();
+            BuildCardsGrid();
             ApplyFilter(null);
         }
 
@@ -90,6 +104,30 @@ namespace RunnerForex.Castle
         {
             if (detailModalRoot != null) detailModalRoot.SetActive(false);
             if (panelRoot != null) panelRoot.SetActive(false);
+        }
+
+        public void EnsureGridSettings()
+        {
+            if (cardsGridContainer == null)
+            {
+                cardsGridContainer = transform.Find("ScrollView/Viewport/GridContent");
+            }
+            if (cardsGridContainer == null) return;
+
+            GridLayoutGroup grid = cardsGridContainer.GetComponent<GridLayoutGroup>();
+            if (grid == null) grid = cardsGridContainer.gameObject.AddComponent<GridLayoutGroup>();
+            grid.enabled = true;
+            grid.cellSize = new Vector2(176f, 230f);
+            grid.spacing = new Vector2(20f, 20f);
+            grid.padding = new RectOffset(17, 17, 20, 20);
+            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+            grid.constraintCount = 5;
+
+            ContentSizeFitter csf = cardsGridContainer.GetComponent<ContentSizeFitter>();
+            if (csf == null) csf = cardsGridContainer.gameObject.AddComponent<ContentSizeFitter>();
+            csf.enabled = true;
+            csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
         private void Update()

@@ -46,7 +46,12 @@ namespace RunnerForex.Castle
 
         private void Awake()
         {
-            if (transform.childCount == 0 && patternId > 0)
+            Build(patternId);
+        }
+
+        private void OnEnable()
+        {
+            if (transform.childCount == 0 || lastBuiltPatternId != patternId)
             {
                 Build(patternId);
             }
@@ -54,57 +59,120 @@ namespace RunnerForex.Castle
 
         private void OnValidate()
         {
-            if (patternId != lastBuiltPatternId)
+#if UNITY_EDITOR
+            if (UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (patternId != lastBuiltPatternId || transform.childCount == 0)
             {
-                Build(patternId);
+                UnityEditor.EditorApplication.delayCall += () =>
+                {
+                    if (this != null && gameObject != null && !UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode)
+                    {
+                        Build(patternId);
+                    }
+                };
             }
+#endif
         }
 
         /// <summary>
         /// Builds or updates all bars, wicks, and trendlines for the specified pattern ID.
+        /// Updates children in-place to avoid GC, avoid destroying objects during scene changes,
+        /// and eliminate editor console errors.
         /// </summary>
         public void Build(int id)
         {
+            if (this == null || gameObject == null) return;
+
             patternId = Mathf.Clamp(id, 1, 30);
             lastBuiltPatternId = patternId;
-
-            // Clear existing elements
-            for (int i = transform.childCount - 1; i >= 0; i--)
-            {
-                GameObject child = transform.GetChild(i).gameObject;
-                if (Application.isPlaying)
-                {
-                    Destroy(child);
-                }
-                else
-                {
-                    DestroyImmediate(child);
-                }
-            }
 
             List<CandleElement> elements = GetPatternElements(patternId, bullishColor, bearishColor, neutralColor, lineColor, whiteLineColor);
             RectTransform parentRt = GetComponent<RectTransform>();
             if (parentRt == null) parentRt = gameObject.AddComponent<RectTransform>();
 
-            foreach (var el in elements)
-            {
-                GameObject obj = new GameObject(el.name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                obj.transform.SetParent(transform, false);
+            // Ensure parent RectTransform is properly centered
+            parentRt.pivot = new Vector2(0.5f, 0.5f);
 
-                RectTransform rt = obj.GetComponent<RectTransform>();
+            int targetCount = elements != null ? elements.Count : 0;
+
+            // Reuse existing child GameObjects or instantiate as needed
+            for (int i = 0; i < targetCount; i++)
+            {
+                var el = elements[i];
+                GameObject childObj;
+                RectTransform rt;
+                Image img;
+
+                if (i < transform.childCount)
+                {
+                    childObj = transform.GetChild(i).gameObject;
+                    childObj.name = el.name;
+                    if (!childObj.activeSelf) childObj.SetActive(true);
+
+                    rt = childObj.GetComponent<RectTransform>();
+                    if (rt == null) rt = childObj.AddComponent<RectTransform>();
+
+                    img = childObj.GetComponent<Image>();
+                    if (img == null) img = childObj.AddComponent<Image>();
+                }
+                else
+                {
+                    childObj = new GameObject(el.name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                    childObj.transform.SetParent(transform, false);
+                    rt = childObj.GetComponent<RectTransform>();
+                    img = childObj.GetComponent<Image>();
+                }
+
                 rt.anchorMin = new Vector2(0.5f, 0.5f);
                 rt.anchorMax = new Vector2(0.5f, 0.5f);
                 rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.anchoredPosition = el.pos;
                 rt.sizeDelta = el.size;
-                if (Mathf.Abs(el.rotationZ) > 0.01f)
-                {
-                    rt.localRotation = Quaternion.Euler(0, 0, el.rotationZ);
-                }
+                rt.localRotation = Mathf.Abs(el.rotationZ) > 0.01f ? Quaternion.Euler(0f, 0f, el.rotationZ) : Quaternion.identity;
 
-                Image img = obj.GetComponent<Image>();
                 img.color = el.color;
                 img.raycastTarget = false;
+            }
+
+            // Safely deactivate and schedule removal for any excess children
+            int currentChildCount = transform.childCount;
+            if (currentChildCount > targetCount)
+            {
+                List<GameObject> toDestroy = new List<GameObject>();
+                for (int i = targetCount; i < currentChildCount; i++)
+                {
+                    GameObject excessChild = transform.GetChild(i).gameObject;
+                    excessChild.SetActive(false);
+                    toDestroy.Add(excessChild);
+                }
+
+                if (toDestroy.Count > 0)
+                {
+#if UNITY_EDITOR
+                    if (!Application.isPlaying)
+                    {
+                        UnityEditor.EditorApplication.delayCall += () =>
+                        {
+                            foreach (var go in toDestroy)
+                            {
+                                if (go != null) DestroyImmediate(go);
+                            }
+                        };
+                    }
+                    else
+                    {
+                        foreach (var go in toDestroy)
+                        {
+                            if (go != null) Destroy(go);
+                        }
+                    }
+#else
+                    foreach (var go in toDestroy)
+                    {
+                        if (go != null) Destroy(go);
+                    }
+#endif
+                }
             }
         }
 
@@ -125,30 +193,30 @@ namespace RunnerForex.Castle
 
                 // 2. Hammer
                 case 2:
-                    list.Add(new CandleElement("UpperWick", new Vector2(0, 16), new Vector2(2.5f, 4), bull));
-                    list.Add(new CandleElement("Body", new Vector2(0, 9), new Vector2(14, 12), bull));
-                    list.Add(new CandleElement("LowerWick", new Vector2(0, -11), new Vector2(2.5f, 28), bull));
+                    list.Add(new CandleElement("UpperWick", new Vector2(0, 19), new Vector2(2.5f, 4), bull));
+                    list.Add(new CandleElement("Body", new Vector2(0, 12), new Vector2(14, 12), bull));
+                    list.Add(new CandleElement("LowerWick", new Vector2(0, -8), new Vector2(2.5f, 28), bull));
                     break;
 
                 // 3. Hanging Man
                 case 3:
-                    list.Add(new CandleElement("UpperWick", new Vector2(0, 16), new Vector2(2.5f, 4), bear));
-                    list.Add(new CandleElement("Body", new Vector2(0, 9), new Vector2(14, 12), bear));
-                    list.Add(new CandleElement("LowerWick", new Vector2(0, -11), new Vector2(2.5f, 28), bear));
+                    list.Add(new CandleElement("UpperWick", new Vector2(0, 19), new Vector2(2.5f, 4), bear));
+                    list.Add(new CandleElement("Body", new Vector2(0, 12), new Vector2(14, 12), bear));
+                    list.Add(new CandleElement("LowerWick", new Vector2(0, -8), new Vector2(2.5f, 28), bear));
                     break;
 
                 // 4. Shooting Star
                 case 4:
-                    list.Add(new CandleElement("UpperWick", new Vector2(0, 11), new Vector2(2.5f, 28), bear));
-                    list.Add(new CandleElement("Body", new Vector2(0, -9), new Vector2(14, 12), bear));
-                    list.Add(new CandleElement("LowerWick", new Vector2(0, -16), new Vector2(2.5f, 4), bear));
+                    list.Add(new CandleElement("UpperWick", new Vector2(0, 8), new Vector2(2.5f, 28), bear));
+                    list.Add(new CandleElement("Body", new Vector2(0, -12), new Vector2(14, 12), bear));
+                    list.Add(new CandleElement("LowerWick", new Vector2(0, -19), new Vector2(2.5f, 4), bear));
                     break;
 
                 // 5. Inverted Hammer
                 case 5:
-                    list.Add(new CandleElement("UpperWick", new Vector2(0, 11), new Vector2(2.5f, 28), bull));
-                    list.Add(new CandleElement("Body", new Vector2(0, -9), new Vector2(14, 12), bull));
-                    list.Add(new CandleElement("LowerWick", new Vector2(0, -16), new Vector2(2.5f, 4), bull));
+                    list.Add(new CandleElement("UpperWick", new Vector2(0, 8), new Vector2(2.5f, 28), bull));
+                    list.Add(new CandleElement("Body", new Vector2(0, -12), new Vector2(14, 12), bull));
+                    list.Add(new CandleElement("LowerWick", new Vector2(0, -19), new Vector2(2.5f, 4), bull));
                     break;
 
                 // 6. Bullish Engulfing

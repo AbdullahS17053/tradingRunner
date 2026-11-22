@@ -296,9 +296,9 @@ namespace RunnerForex.EditorTools
             crt.sizeDelta = new Vector2(0, 1400);
 
             GridLayoutGroup grid = contentObj.GetComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(175, 220);
-            grid.spacing = new Vector2(18, 18);
-            grid.padding = new RectOffset(16, 16, 16, 16);
+            grid.cellSize = new Vector2(176, 230);
+            grid.spacing = new Vector2(20, 20);
+            grid.padding = new RectOffset(17, 17, 20, 20);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             grid.constraintCount = 5;
 
@@ -329,7 +329,7 @@ namespace RunnerForex.EditorTools
             cardObj.transform.SetParent(parent, false);
 
             RectTransform rt = cardObj.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(175, 220);
+            rt.sizeDelta = new Vector2(176, 230);
 
             Image bg = cardObj.GetComponent<Image>();
             bg.color = new Color(0.04f, 0.05f, 0.09f, 0.95f);
@@ -348,9 +348,9 @@ namespace RunnerForex.EditorTools
             GameObject sprObj = new GameObject("CardSprite", typeof(RectTransform), typeof(Image));
             sprObj.transform.SetParent(cardObj.transform, false);
             RectTransform srt = sprObj.GetComponent<RectTransform>();
-            srt.anchorMin = Vector2.zero;
+            srt.anchorMin = new Vector2(0f, 0.22f);
             srt.anchorMax = Vector2.one;
-            srt.offsetMin = new Vector2(4, 28);
+            srt.offsetMin = new Vector2(4, 4);
             srt.offsetMax = new Vector2(-4, -4);
             Image sprImg = sprObj.GetComponent<Image>();
             sprImg.sprite = info.GetSprite();
@@ -364,7 +364,7 @@ namespace RunnerForex.EditorTools
             badgeObj.transform.SetParent(sprObj.transform, false);
             RectTransform badgeRt = badgeObj.GetComponent<RectTransform>();
             badgeRt.anchorMin = new Vector2(0f, 0.45f);
-            badgeRt.anchorMax = new Vector2(1f, 1f);
+            badgeRt.anchorMax = new Vector2(1f, 0.98f);
             badgeRt.anchoredPosition = Vector2.zero;
             badgeRt.sizeDelta = Vector2.zero;
             badgeRt.pivot = new Vector2(0.5f, 0.5f);
@@ -377,12 +377,12 @@ namespace RunnerForex.EditorTools
             moveLblObj.transform.SetParent(cardObj.transform, false);
             RectTransform mlrt = moveLblObj.GetComponent<RectTransform>();
             mlrt.anchorMin = new Vector2(0f, 0f);
-            mlrt.anchorMax = new Vector2(1f, 0.16f);
-            mlrt.offsetMin = Vector2.zero;
-            mlrt.offsetMax = Vector2.zero;
+            mlrt.anchorMax = new Vector2(1f, 0.22f);
+            mlrt.anchoredPosition = new Vector2(0, 4);
+            mlrt.sizeDelta = new Vector2(-8, 0);
             TextMeshProUGUI mlt = moveLblObj.GetComponent<TextMeshProUGUI>();
-            mlt.text = info.moveName;
-            mlt.fontSize = 12;
+            mlt.text = $"{info.id}. {info.patternName}\n{info.moveName}";
+            mlt.fontSize = 11;
             mlt.fontStyle = FontStyles.Bold;
             mlt.alignment = TextAlignmentOptions.Center;
             mlt.color = info.BiasColor;
