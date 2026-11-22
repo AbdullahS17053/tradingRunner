@@ -166,7 +166,33 @@ namespace RunnerForex.Castle
             if (detailCardImage != null)
             {
                 Sprite sp = info.GetSprite();
-                if (sp != null) detailCardImage.sprite = sp;
+                if (sp != null)
+                {
+                    detailCardImage.sprite = sp;
+                    detailCardImage.color = Color.white;
+                }
+                else
+                {
+                    detailCardImage.color = new Color(1f, 1f, 1f, 0f);
+                }
+
+                CandlestickBadge modalBadge = detailCardImage.GetComponentInChildren<CandlestickBadge>(true);
+                if (modalBadge == null)
+                {
+                    GameObject mbObj = new GameObject("CandlestickBadge", typeof(RectTransform), typeof(CandlestickBadge));
+                    mbObj.transform.SetParent(detailCardImage.transform, false);
+                    RectTransform mbrt = mbObj.GetComponent<RectTransform>();
+                    mbrt.anchorMin = new Vector2(0f, 0.45f);
+                    mbrt.anchorMax = new Vector2(1f, 1f);
+                    mbrt.anchoredPosition = Vector2.zero;
+                    mbrt.sizeDelta = Vector2.zero;
+                    mbrt.pivot = new Vector2(0.5f, 0.5f);
+                    modalBadge = mbObj.GetComponent<CandlestickBadge>();
+                }
+                if (modalBadge != null)
+                {
+                    modalBadge.Build(info.id);
+                }
             }
 
             if (detailTitleText != null)

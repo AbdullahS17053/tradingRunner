@@ -9,6 +9,7 @@ namespace RunnerForex.Castle
     /// Interactive UI Card representing one of the 30 Candlestick Patterns with Movement Animations.
     /// Pre-organized in the scene hierarchy so the designer can inspect and change listings directly.
     /// </summary>
+    [ExecuteAlways]
     public class ForexPatternCardUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         [Header("Data")]
@@ -22,6 +23,7 @@ namespace RunnerForex.Castle
         public TextMeshProUGUI moveNameText;
         public GameObject badgeTag;
         public TextMeshProUGUI badgeText;
+        public CandlestickBadge candlestickBadge;
 
         [Header("Animator")]
         public ForexPatternMovementAnimator animator;
@@ -42,11 +44,54 @@ namespace RunnerForex.Castle
             if (titleText == null) titleText = transform.Find("TitleLabel")?.GetComponent<TextMeshProUGUI>();
             if (animator == null) animator = GetComponent<ForexPatternMovementAnimator>() ?? cardImage?.GetComponent<ForexPatternMovementAnimator>();
 
+            EnsureCandlestickBadge();
+
             Button btn = GetComponent<Button>();
             if (btn != null)
             {
                 btn.onClick.RemoveAllListeners();
                 btn.onClick.AddListener(TriggerCardSelection);
+            }
+        }
+
+        private void EnsureCandlestickBadge()
+        {
+            Transform cardSpriteTf = transform.Find("CardSprite");
+            if (cardSpriteTf == null) return;
+
+            if (cardImage != null && cardImage.sprite == null)
+            {
+                cardImage.color = new Color(1f, 1f, 1f, 0f);
+            }
+
+            if (candlestickBadge == null)
+            {
+                Transform badgeTf = cardSpriteTf.Find("CandlestickBadge");
+                if (badgeTf != null)
+                {
+                    candlestickBadge = badgeTf.GetComponent<CandlestickBadge>();
+                }
+                else
+                {
+                    GameObject badgeObj = new GameObject("CandlestickBadge", typeof(RectTransform), typeof(CandlestickBadge));
+                    badgeObj.transform.SetParent(cardSpriteTf, false);
+                    RectTransform rt = badgeObj.GetComponent<RectTransform>();
+                    rt.anchorMin = new Vector2(0f, 0.45f);
+                    rt.anchorMax = new Vector2(1f, 1f);
+                    rt.anchoredPosition = Vector2.zero;
+                    rt.sizeDelta = Vector2.zero;
+                    rt.pivot = new Vector2(0.5f, 0.5f);
+                    candlestickBadge = badgeObj.GetComponent<CandlestickBadge>();
+                }
+            }
+
+            if (candlestickBadge != null)
+            {
+                candlestickBadge.patternId = patternId;
+                if (candlestickBadge.transform.childCount == 0)
+                {
+                    candlestickBadge.Build(patternId);
+                }
             }
         }
 
@@ -69,10 +114,30 @@ namespace RunnerForex.Castle
 
             onClickCallback = onSelected;
 
-            // Retain hierarchy customized sprite if already set, otherwise assign database sprite
-            if (cardImage != null && cardImage.sprite == null && info != null)
+            if (candlestickBadge == null) EnsureCandlestickBadge();
+            if (candlestickBadge != null)
             {
-                cardImage.sprite = info.GetSprite();
+                candlestickBadge.patternId = patternId;
+                candlestickBadge.Build(patternId);
+            }
+
+            // Retain hierarchy customized sprite if already set, otherwise assign database sprite
+            if (cardImage != null)
+            {
+                if (cardImage.sprite == null && info != null)
+                {
+                    cardImage.sprite = info.GetSprite();
+                }
+
+                // If no external sprite exists, make cardImage transparent so procedural CandlestickBadge shows cleanly
+                if (cardImage.sprite == null)
+                {
+                    cardImage.color = new Color(1f, 1f, 1f, 0f);
+                }
+                else
+                {
+                    cardImage.color = Color.white;
+                }
             }
 
             // Retain hierarchy customized title if already set, otherwise assign database title

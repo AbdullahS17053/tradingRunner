@@ -354,6 +354,23 @@ namespace RunnerForex.EditorTools
             srt.offsetMax = new Vector2(-4, -4);
             Image sprImg = sprObj.GetComponent<Image>();
             sprImg.sprite = info.GetSprite();
+            if (sprImg.sprite == null)
+            {
+                sprImg.color = new Color(1f, 1f, 1f, 0f);
+            }
+
+            // Procedural CandlestickBadge inside CardSprite
+            GameObject badgeObj = new GameObject("CandlestickBadge", typeof(RectTransform), typeof(CandlestickBadge));
+            badgeObj.transform.SetParent(sprObj.transform, false);
+            RectTransform badgeRt = badgeObj.GetComponent<RectTransform>();
+            badgeRt.anchorMin = new Vector2(0f, 0.45f);
+            badgeRt.anchorMax = new Vector2(1f, 1f);
+            badgeRt.anchoredPosition = Vector2.zero;
+            badgeRt.sizeDelta = Vector2.zero;
+            badgeRt.pivot = new Vector2(0.5f, 0.5f);
+            CandlestickBadge badge = badgeObj.GetComponent<CandlestickBadge>();
+            badge.patternId = info.id;
+            badge.Build(info.id);
 
             // Move Name Label at bottom
             GameObject moveLblObj = new GameObject("MoveLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -375,6 +392,7 @@ namespace RunnerForex.EditorTools
             cardUI.cardImage = sprImg;
             cardUI.borderGlow = borderImg;
             cardUI.moveNameText = mlt;
+            cardUI.candlestickBadge = badge;
 
             ForexPatternMovementAnimator anim = cardObj.AddComponent<ForexPatternMovementAnimator>();
             anim.animationType = info.animationType;
@@ -426,8 +444,22 @@ namespace RunnerForex.EditorTools
             crt.anchoredPosition = new Vector2(0, 70);
             crt.sizeDelta = new Vector2(180, 220);
             Image cImg = cardImgObj.GetComponent<Image>();
+            cImg.color = new Color(1f, 1f, 1f, 0f);
             panelComp.detailCardImage = cImg;
             panelComp.detailAnimator = cardImgObj.AddComponent<ForexPatternMovementAnimator>();
+
+            // Modal CandlestickBadge
+            GameObject modalBadgeObj = new GameObject("CandlestickBadge", typeof(RectTransform), typeof(CandlestickBadge));
+            modalBadgeObj.transform.SetParent(cardImgObj.transform, false);
+            RectTransform mbrt = modalBadgeObj.GetComponent<RectTransform>();
+            mbrt.anchorMin = new Vector2(0f, 0.45f);
+            mbrt.anchorMax = new Vector2(1f, 1f);
+            mbrt.anchoredPosition = Vector2.zero;
+            mbrt.sizeDelta = Vector2.zero;
+            mbrt.pivot = new Vector2(0.5f, 0.5f);
+            CandlestickBadge modalBadge = modalBadgeObj.GetComponent<CandlestickBadge>();
+            modalBadge.patternId = 1;
+            modalBadge.Build(1);
 
             // Signal Badge
             GameObject sigObj = new GameObject("DetailSignalBadge", typeof(RectTransform), typeof(TextMeshProUGUI));
