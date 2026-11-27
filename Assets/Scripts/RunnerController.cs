@@ -26,6 +26,16 @@ public class RunnerController : MonoBehaviour
     [Tooltip("How fast the character slams down when sliding mid-air")]
     public float fastFallVelocity = -20f;
 
+    [Header("Grounding & Input Feel")]
+    [Tooltip("How long after leaving the ground jump/slide still count as grounded")]
+    public float coyoteTime = 0.18f;
+    [Tooltip("How long a jump press is remembered and replayed on landing")]
+    public float jumpBufferTime = 0.18f;
+    [Tooltip("How long a slide press is remembered and replayed on landing")]
+    public float slideBufferTime = 0.18f;
+    [Tooltip("Extra distance below the capsule that still counts as touching the ground")]
+    public float groundProbeDistance = 0.35f;
+
     [Header("Labyrinth Level Settings")]
     [Tooltip("Enable 90-degree directional turning ONLY for Labyrinth World")]
     public bool enableLabyrinthTurns = false;
@@ -38,6 +48,12 @@ public class RunnerController : MonoBehaviour
     private Quaternion pathRotation = Quaternion.identity;
     private float groundedGraceTimer = 0f;
 
+    private float jumpBufferTimer = 0f;
+    private float slideBufferTimer = 0f;
+    private int groundProbeFrame = -1;
+    private bool groundProbeResult = false;
+    private readonly RaycastHit[] groundProbeHits = new RaycastHit[8];
+
     public Vector3 PathForward => pathRotation * Vector3.forward;
 
     private float originalHeight;
@@ -48,7 +64,45 @@ public class RunnerController : MonoBehaviour
     // Added flag to prevent input/movement after dying
     private bool isDead = false;
 
-    private bool IsPlayerGrounded => controller.isGrounded || groundedGraceTimer > 0f;
+    // Grounded means: the controller reports contact, we are still inside the coyote
+    // window, or a short downward probe finds floor. The probe is what keeps jump and
+    // slide alive on City's tiled road, where CharacterController.isGrounded flickers
+    // between the 5x5 road tile colliders while the runner is visibly on the ground.
+    private bool IsPlayerGrounded
+    {
+        get
+        {
+            if (velocity.y > 0.1f) return false; // never grounded while rising
+            return controller.isGrounded || groundedGraceTimer > 0f || GroundProbe();
+        }
+    }
+
+    private bool GroundProbe()
+    {
+        if (controller == null) return false;
+        if (groundProbeFrame == Time.frameCount) return groundProbeResult;
+        groundProbeFrame = Time.frameCount;
+        groundProbeResult = false;
+
+        float halfHeight = controller.height * 0.5f;
+        Vector3 origin = transform.position + controller.center;
+        float distance = halfHeight + groundProbeDistance;
+
+        int count = Physics.RaycastNonAlloc(origin, Vector3.down, groundProbeHits, distance, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < count; i++)
+        {
+            RaycastHit hit = groundProbeHits[i];
+            Collider col = hit.collider;
+            if (col == null || col == controller) continue;
+            if (col.transform == transform || col.transform.IsChildOf(transform)) continue;
+            if (hit.normal.y >= 0.55f)
+            {
+                groundProbeResult = true;
+                break;
+            }
+        }
+        return groundProbeResult;
+    }
 
     private void Awake()
     {
@@ -116,10 +170,17 @@ public class RunnerController : MonoBehaviour
         if (isDead || isWarping) return;
         if (GameManager.Instance != null && !GameManager.Instance.IsGameStarted) return;
 
+<<<<<<< Updated upstream
         if (controller != null && controller.enabled && controller.isGrounded)
             groundedGraceTimer = 0.12f;
         else if (groundedGraceTimer > 0f)
             groundedGraceTimer -= Time.deltaTime;
+=======
+        float dt = Time.deltaTime;
+
+        UpdateGroundedState(dt);
+        HandleBufferedInput(dt);
+>>>>>>> Stashed changes
 
         if (enableAutoPilot)
         {
@@ -131,6 +192,53 @@ public class RunnerController : MonoBehaviour
         UpdateAnimations();
         UpdateSpeedBoostEffects();
         HandleSlidingTimer();
+    }
+
+    private void UpdateGroundedState(float dt)
+    {
+        if (controller == null) return;
+
+        if (controller.isGrounded || GroundProbe())
+        {
+            groundedGraceTimer = coyoteTime;
+        }
+        else
+        {
+            groundedGraceTimer = Mathf.Max(0f, groundedGraceTimer - dt);
+        }
+    }
+
+    /// <summary>
+    /// Replays a jump/slide press that arrived slightly too early (e.g. one frame
+    /// before touchdown, or during a frame where the tiled road broke grounded
+    /// detection). Without this the input was simply thrown away.
+    /// </summary>
+    private void HandleBufferedInput(float dt)
+    {
+        if (jumpBufferTimer > 0f)
+        {
+            jumpBufferTimer = Mathf.Max(0f, jumpBufferTimer - dt);
+            if (IsPlayerGrounded)
+            {
+                jumpBufferTimer = 0f;
+                DoJump();
+            }
+        }
+
+        if (slideBufferTimer > 0f)
+        {
+            slideBufferTimer = Mathf.Max(0f, slideBufferTimer - dt);
+            if (IsPlayerGrounded)
+            {
+                slideBufferTimer = 0f;
+                DoSlide();
+            }
+        }
+
+        if (turnBufferTimer > 0f)
+        {
+            turnBufferTimer = Mathf.Max(0f, turnBufferTimer - dt);
+        }
     }
 
     private void HandleAutoPilot()
@@ -246,10 +354,20 @@ public class RunnerController : MonoBehaviour
     }
 
     private LabyrinthTurnZone currentTurnZone;
+    private float turnBufferTimer = 0f;
+    private int bufferedTurnDirection = 0;
 
     public void RegisterActiveTurnZone(LabyrinthTurnZone zone)
     {
         currentTurnZone = zone;
+        if (turnBufferTimer > 0f && zone != null && !zone.HasTriggered)
+        {
+            float requestedAngle = (bufferedTurnDirection < 0) ? -90f : 90f;
+            if (zone.ExecuteTurn(this, requestedAngle))
+            {
+                turnBufferTimer = 0f;
+            }
+        }
     }
 
     public void UnregisterActiveTurnZone(LabyrinthTurnZone zone)
@@ -259,12 +377,28 @@ public class RunnerController : MonoBehaviour
 
     public void MoveLane(int direction)
     {
-        if (enableLabyrinthTurns && currentTurnZone != null && !currentTurnZone.HasTriggered)
+        if (enableLabyrinthTurns)
         {
-            float requestedAngle = (direction < 0) ? -90f : 90f;
-            if (currentTurnZone.ExecuteTurn(this, requestedAngle))
+            if (currentTurnZone != null && !currentTurnZone.HasTriggered)
             {
-                return; // Consumed as corner turn!
+                float requestedAngle = (direction < 0) ? -90f : 90f;
+                if (currentTurnZone.ExecuteTurn(this, requestedAngle))
+                {
+                    turnBufferTimer = 0f;
+                    return; // Consumed as corner turn!
+                }
+                else
+                {
+                    // Swiped in an invalid turn direction for this turn zone (e.g. right in LeftOnly)
+                    // Do not change lanes, keep player facing forward towards wall!
+                    return;
+                }
+            }
+            else
+            {
+                // Buffer turn input briefly in case player swiped right before entering zone
+                turnBufferTimer = 0.3f;
+                bufferedTurnDirection = direction;
             }
         }
 
@@ -289,15 +423,28 @@ public class RunnerController : MonoBehaviour
     {
         if (IsPlayerGrounded)
         {
-            if (isSliding) StopSliding();
+            DoJump();
+        }
+        else
+        {
+            // Remember the press and replay it as soon as we touch down.
+            jumpBufferTimer = jumpBufferTime;
+        }
+    }
 
-            groundedGraceTimer = 0f;
-            velocity.y = jumpForce;
-            if (animator != null)
-            {
-                animator.ResetTrigger("Slide");
-                animator.SetTrigger("Jump");
-            }
+    private void DoJump()
+    {
+        jumpBufferTimer = 0f;
+        slideBufferTimer = 0f;
+
+        if (isSliding) StopSliding();
+
+        groundedGraceTimer = 0f;
+        velocity.y = jumpForce;
+        if (animator != null)
+        {
+            animator.ResetTrigger("Slide");
+            animator.SetTrigger("Jump");
         }
     }
 
@@ -305,21 +452,37 @@ public class RunnerController : MonoBehaviour
     {
         if (IsPlayerGrounded)
         {
-            isSliding = true;
-            slideTimer = slideDuration;
-
-            controller.height = originalHeight / 2f;
-            controller.center = new Vector3(originalCenter.x, originalCenter.y / 2f, originalCenter.z);
-
-            if (animator != null)
-            {
-                animator.ResetTrigger("Jump");
-                animator.SetTrigger("Slide");
-            }
+            DoSlide();
         }
         else
         {
+            // Slam down, and still slide when we land.
             velocity.y = fastFallVelocity;
+            slideBufferTimer = slideBufferTime;
+        }
+    }
+
+    private void DoSlide()
+    {
+        jumpBufferTimer = 0f;
+        slideBufferTimer = 0f;
+
+        if (isSliding)
+        {
+            slideTimer = slideDuration;
+            return;
+        }
+
+        isSliding = true;
+        slideTimer = slideDuration;
+
+        controller.height = originalHeight / 2f;
+        controller.center = new Vector3(originalCenter.x, originalCenter.y / 2f, originalCenter.z);
+
+        if (animator != null)
+        {
+            animator.ResetTrigger("Jump");
+            animator.SetTrigger("Slide");
         }
     }
 
@@ -344,7 +507,7 @@ public class RunnerController : MonoBehaviour
 
     private void MovePlayer()
     {
-        if (controller.isGrounded && velocity.y < 0)
+        if (IsPlayerGrounded && velocity.y < 0)
             velocity.y = -2f;
 
         velocity.y += gravity * Time.deltaTime;
@@ -362,6 +525,7 @@ public class RunnerController : MonoBehaviour
             float newX = Mathf.Lerp(currentX, targetXPosition, laneSwitchSpeed * Time.deltaTime);
             float moveX = newX - currentX;
 
+<<<<<<< Updated upstream
             Vector3 localMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
             Vector3 worldMoveVector = transform.parent != null ? transform.parent.TransformDirection(localMoveVector) : localMoveVector;
 
@@ -369,6 +533,11 @@ public class RunnerController : MonoBehaviour
             {
                 controller.Move(worldMoveVector);
             }
+=======
+            Vector3 linearMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
+            controller.Move(linearMoveVector);
+            if (controller.isGrounded) groundedGraceTimer = coyoteTime;
+>>>>>>> Stashed changes
             return;
         }
 
@@ -409,6 +578,21 @@ public class RunnerController : MonoBehaviour
 
         currentLane = numberOfLanes / 2;
         targetXPosition = GetLaneXPosition(currentLane);
+
+        // Center player cleanly on the new corridor
+        Vector3 newRight = newRotation * Vector3.right;
+        Vector3 newForward = newRotation * Vector3.forward;
+
+        float lateralOffset = Vector3.Dot(transform.position - pathOrigin, newRight);
+        float minLane = GetLaneXPosition(0);
+        float maxLane = GetLaneXPosition(numberOfLanes - 1);
+        lateralOffset = Mathf.Clamp(lateralOffset, minLane, maxLane);
+
+        float forwardOffset = Mathf.Max(0f, Vector3.Dot(transform.position - pathOrigin, newForward));
+
+        Vector3 correctedPos = pathOrigin + (newRight * lateralOffset) + (newForward * forwardOffset);
+        correctedPos.y = transform.position.y;
+        transform.position = correctedPos;
     }
 
     private void UpdateAnimations()
