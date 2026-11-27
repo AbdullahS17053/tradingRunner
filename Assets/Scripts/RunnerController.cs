@@ -154,8 +154,10 @@ public class RunnerController : MonoBehaviour
             defaultCameraFOV = Camera.main.fieldOfView;
         }
 
-        if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().buildIndex != 1 && animator != null)
+        bool isMainMenu = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase);
+        if (!isMainMenu && animator != null)
         {
+            animator.SetBool("GameStarted", true);
             animator.Play("Sprint", 0, 0f);
         }
     }
