@@ -22,31 +22,39 @@ namespace RunnerForex.Castle
 
         public GameObject GetMainChallengePanel()
         {
-            if (mainChallengePanel != null) return mainChallengePanel;
-
-            // Search all active and inactive transforms in loaded scenes
-            Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
-            foreach (Transform t in allTransforms)
+            if (mainChallengePanel == null)
             {
-                if (t != null && t.gameObject.name == "MainChallengePanel" && t.gameObject.scene.isLoaded)
+                // Search all active and inactive transforms in loaded scenes
+                Transform[] allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
+                foreach (Transform t in allTransforms)
                 {
-                    mainChallengePanel = t.gameObject;
-                    return mainChallengePanel;
+                    if (t != null && t.gameObject.name == "MainChallengePanel" && t.gameObject.scene.isLoaded)
+                    {
+                        mainChallengePanel = t.gameObject;
+                        break;
+                    }
+                }
+
+                if (mainChallengePanel == null)
+                {
+                    GameObject hud = GameObject.Find("CastleGameplayHUD");
+                    if (hud != null)
+                    {
+                        Transform found = hud.transform.Find("MainChallengePanel");
+                        if (found != null)
+                        {
+                            mainChallengePanel = found.gameObject;
+                        }
+                    }
                 }
             }
 
-            GameObject hud = GameObject.Find("CastleGameplayHUD");
-            if (hud != null)
+            if (mainChallengePanel != null && challengeCanvas != null && mainChallengePanel.GetComponentInParent<Canvas>() == null)
             {
-                Transform found = hud.transform.Find("MainChallengePanel");
-                if (found != null)
-                {
-                    mainChallengePanel = found.gameObject;
-                    return mainChallengePanel;
-                }
+                mainChallengePanel.transform.SetParent(challengeCanvas.transform, false);
             }
 
-            return null;
+            return mainChallengePanel;
         }
 
         [Header("Challenge UI Elements")]

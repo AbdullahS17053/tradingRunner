@@ -92,6 +92,8 @@ namespace RunnerForex.Castle
             }
         }
 
+        private bool isChunkedLevel = false;
+
         private void Awake()
         {
             if (Instance == null || Instance == this)
@@ -107,9 +109,13 @@ namespace RunnerForex.Castle
             hasTransitionedToWalk = false;
             isSequenceRunning = false;
             computerTriggerReached = false;
+            isChunkedLevel = Object.FindFirstObjectByType<ChunkSpawner>() != null;
 
             FindGameplayRoot();
-            EnsureSingleFomoBot();
+            if (!isChunkedLevel)
+            {
+                EnsureSingleFomoBot();
+            }
         }
 
         private void OnDestroy()
@@ -122,8 +128,12 @@ namespace RunnerForex.Castle
 
         private void Start()
         {
+            isChunkedLevel = Object.FindFirstObjectByType<ChunkSpawner>() != null;
             FindGameplayRoot();
-            EnsureSingleFomoBot();
+            if (!isChunkedLevel)
+            {
+                EnsureSingleFomoBot();
+            }
             EnsureSceneElements();
 
             runner = RunnerController.Instance;
@@ -133,6 +143,103 @@ namespace RunnerForex.Castle
             }
 
             activeCamera = Camera.main;
+        }
+
+        public void RegisterEndingChunk(Transform endChunkRoot)
+        {
+            if (endChunkRoot == null) return;
+            isChunkedLevel = true;
+
+            foreach (Transform t in endChunkRoot.GetComponentsInChildren<Transform>(true))
+            {
+                if (t.name == "Trigger " || t.name == "Trigger" || t.name == "WalkSequenceTrigger")
+                {
+                    var col = t.GetComponent<Collider>();
+                    if (col != null)
+                    {
+                        userWalkSequenceCollider = col;
+                        walkTriggerZPosition = t.position.z - 0.5f;
+                    }
+                }
+                else if (t.name == "GoldenDoors" || t.name == "SM_Bld_Castle_Wall_Gate_L_01")
+                {
+                    goldenDoorsTransform = t;
+                    doorZPosition = t.position.z;
+                }
+                else if (t.name == "ComputerLaneStartPoint")
+                {
+                    computerLaneStartPoint = t;
+                }
+                else if (t.name == "SM_Prop_Chair_Fancy_01")
+                {
+                    chairSeatTransform = t;
+                }
+                else if (t.name == "ComputerCameraView")
+                {
+                    computerCameraPosition = t;
+                }
+                else if (t.name == "LotteryBox")
+                {
+                    lotteryBoxTransform = t;
+                }
+                else if (t.name == "LotteryBoxCameraView")
+                {
+                    lotteryBoxCameraView = t;
+                }
+                else if (t.name == "LotteryBoxPortal")
+                {
+                    lotteryBoxPortal = t.gameObject;
+                    lotteryBoxPortal.SetActive(false);
+                }
+            }
+
+            if (goldenDoorsTransform != null)
+            {
+                leftDoorWing = null;
+                rightDoorWing = null;
+                foreach (Transform child in goldenDoorsTransform.GetComponentsInChildren<Transform>(true))
+                {
+                    if (leftDoorWing == null && (child.name.Contains("Door_L") || child.name.Contains("DoorLeft") || child.name.Contains("Door_01")))
+                    {
+                        leftDoorWing = child;
+                        leftDoorInitialRot = leftDoorWing.localRotation;
+                        leftDoorOpenRot = leftDoorInitialRot * Quaternion.Euler(0f, -90f, 0f);
+                    }
+                    else if (rightDoorWing == null && (child.name.Contains("Door_R") || child.name.Contains("DoorRight") || child.name.Contains("Door_02")))
+                    {
+                        rightDoorWing = child;
+                        rightDoorInitialRot = rightDoorWing.localRotation;
+                        rightDoorOpenRot = rightDoorInitialRot * Quaternion.Euler(0f, 90f, 0f);
+                    }
+                }
+            }
+
+            if (lotteryBoxTransform != null)
+            {
+                foreach (Transform child in lotteryBoxTransform.GetComponentsInChildren<Transform>(true))
+                {
+                    if (child.name.Contains("Lid") || child.name.Contains("Top"))
+                    {
+                        lotteryBoxLid = child;
+                        break;
+                    }
+                }
+            }
+
+            if (CastleChallengeController.Instance != null)
+            {
+                var compTrig = endChunkRoot.GetComponentInChildren<CastleComputerTrigger>(true);
+                if (compTrig != null)
+                {
+                    CastleChallengeController.Instance.computerTrigger = compTrig;
+                }
+                if (lotteryBoxPortal != null)
+                {
+                    CastleChallengeController.Instance.exitPortal = lotteryBoxPortal;
+                }
+            }
+
+            Debug.Log($"[CastleSequenceController] Registered spawned CastleEndChunk at Z={endChunkRoot.position.z:F1} (WalkTriggerZ={walkTriggerZPosition:F1}).");
         }
 
         private void FindGameplayRoot()
@@ -169,11 +276,14 @@ namespace RunnerForex.Castle
                 }
             }
 
-            // 2. Fallback distance check if runner reaches walk trigger point
-            float currentZ = runner.transform.parent != null ? runner.transform.localPosition.z : runner.transform.position.z;
-            if (currentZ >= walkTriggerZPosition)
+            // 2. Fallback distance check if runner reaches walk trigger point (wait until ending chunk registers in chunked mode)
+            if (!isChunkedLevel || goldenDoorsTransform != null)
             {
-                StartWalkAndDoorSequenceFromTrigger();
+                float currentZ = runner.transform.parent != null ? runner.transform.localPosition.z : runner.transform.position.z;
+                if (currentZ >= walkTriggerZPosition)
+                {
+                    StartWalkAndDoorSequenceFromTrigger();
+                }
             }
         }
 
@@ -206,6 +316,31 @@ namespace RunnerForex.Castle
             hasTransitionedToWalk = true;
             isSequenceRunning = true;
             Debug.Log("[CastleSequenceController] Walk sequence triggered! Walking towards golden doors.");
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.isTradingChallengeActive = true;
+            }
+
+            // Smoothly flatten horizon curve for the interior door/computer room finale
+            WorldBendController bendCtrl = Object.FindFirstObjectByType<WorldBendController>();
+            if (bendCtrl != null)
+            {
+                bendCtrl.randomizeHorizontal = false;
+                bendCtrl.verticalBend = 0f;
+                bendCtrl.horizontalBend = 0f;
+                bendCtrl.ApplyBendToShader();
+            }
+
+            // Pause/disable FOMO chaser & obstacle bots so the ending sequence plays cleanly
+            foreach (var fomo in Object.FindObjectsByType<FOMOController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (fomo != null) fomo.gameObject.SetActive(false);
+            }
+            foreach (var bot in Object.FindObjectsByType<FomoBot>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+            {
+                if (bot != null) bot.gameObject.SetActive(false);
+            }
 
             if (runner == null)
             {
@@ -411,6 +546,12 @@ namespace RunnerForex.Castle
                 }
             }
 
+            // In chunked runner scenes (CastleRunner), wait for CastleEndChunk to spawn and call RegisterEndingChunk()
+            if (isChunkedLevel && FindObjectInScene("GoldenDoors") == null)
+            {
+                return;
+            }
+
             // 2. Real Castle Gate & Golden Doors
             if (goldenDoorsTransform == null)
             {
@@ -427,15 +568,17 @@ namespace RunnerForex.Castle
 
             if (goldenDoorsTransform != null)
             {
+                leftDoorWing = null;
+                rightDoorWing = null;
                 foreach (Transform child in goldenDoorsTransform.GetComponentsInChildren<Transform>(true))
                 {
-                    if (child.name.Contains("Door_L") || child.name.Contains("DoorLeft") || child.name.Contains("Door_01"))
+                    if (leftDoorWing == null && (child.name.Contains("Door_L") || child.name.Contains("DoorLeft") || child.name.Contains("Door_01")))
                     {
                         leftDoorWing = child;
                         leftDoorInitialRot = leftDoorWing.localRotation;
                         leftDoorOpenRot = leftDoorInitialRot * Quaternion.Euler(0f, -90f, 0f);
                     }
-                    else if (child.name.Contains("Door_R") || child.name.Contains("DoorRight") || child.name.Contains("Door_02"))
+                    else if (rightDoorWing == null && (child.name.Contains("Door_R") || child.name.Contains("DoorRight") || child.name.Contains("Door_02")))
                     {
                         rightDoorWing = child;
                         rightDoorInitialRot = rightDoorWing.localRotation;
@@ -733,7 +876,7 @@ namespace RunnerForex.Castle
                 }
             }
 
-            Vector3 walkDir = (gameplayRoot != null ? gameplayRoot.forward : (runner != null ? runner.transform.forward : Vector3.forward)).normalized;
+            Vector3 walkDir = (goldenDoorsTransform != null ? goldenDoorsTransform.forward : (gameplayRoot != null ? gameplayRoot.forward : (runner != null ? runner.transform.forward : Vector3.forward))).normalized;
 
             // 2. Walk forward while casting ray from chest forward towards the door
             bool doorOpened = false;
@@ -809,7 +952,16 @@ namespace RunnerForex.Castle
             {
                 if (cc != null) cc.enabled = false;
 
-                if (gameplayRoot != null)
+                if (computerLaneStartPoint != null)
+                {
+                    if (gameplayRoot != null)
+                    {
+                        runner.transform.SetParent(gameplayRoot, false);
+                    }
+                    runner.transform.position = computerLaneStartPoint.position;
+                    runner.transform.rotation = computerLaneStartPoint.rotation;
+                }
+                else if (gameplayRoot != null)
                 {
                     runner.transform.SetParent(gameplayRoot, false);
                     runner.transform.localPosition = new Vector3(0f, 0.15f, 66f);
@@ -817,8 +969,7 @@ namespace RunnerForex.Castle
                 }
                 else
                 {
-                    Vector3 laneStart = computerLaneStartPoint != null ? computerLaneStartPoint.position : new Vector3(0f, 0.15f, 66f);
-                    runner.transform.position = laneStart;
+                    runner.transform.position = new Vector3(0f, 0.15f, 66f);
                     runner.transform.rotation = Quaternion.identity;
                 }
 
@@ -854,7 +1005,7 @@ namespace RunnerForex.Castle
             }
 
             CharacterController cc = (runner != null) ? runner.GetComponent<CharacterController>() : null;
-            Vector3 deskWalkDir = (gameplayRoot != null ? gameplayRoot.forward : (runner != null ? runner.transform.forward : Vector3.forward)).normalized;
+            Vector3 deskWalkDir = (computerLaneStartPoint != null ? computerLaneStartPoint.forward : (gameplayRoot != null ? gameplayRoot.forward : (runner != null ? runner.transform.forward : Vector3.forward))).normalized;
 
             if (runner != null && runner.animator != null)
             {
@@ -1150,9 +1301,14 @@ namespace RunnerForex.Castle
                     runner.animator.CrossFadeInFixedTime("Walk_BlendTree", 0.2f);
                 }
 
-                bool hasParent = runner.transform.parent != null;
-                Vector3 startLocal = hasParent ? runner.transform.localPosition : runner.transform.position;
-                Vector3 portalTargetLocal = new Vector3(1.6f, startLocal.y, 74.5f);
+                Vector3 portalTargetPos = lotteryBoxTransform != null
+                    ? new Vector3(lotteryBoxTransform.position.x, runner.transform.position.y, lotteryBoxTransform.position.z)
+                    : runner.transform.position + runner.transform.forward * 2.5f + runner.transform.right * 1.6f;
+                Vector3 startWorld = runner.transform.position;
+                Quaternion startWorldRot = runner.transform.rotation;
+                Vector3 lookDir = (portalTargetPos - startWorld);
+                lookDir.y = 0f;
+                Quaternion targetWorldRot = lookDir.sqrMagnitude > 0.001f ? Quaternion.LookRotation(lookDir.normalized) : startWorldRot;
 
                 float stepElapsed = 0f;
                 float stepDuration = 1.0f;
@@ -1160,15 +1316,8 @@ namespace RunnerForex.Castle
                 {
                     stepElapsed += Time.deltaTime;
                     float t = Mathf.Clamp01(stepElapsed / stepDuration);
-                    if (hasParent)
-                    {
-                        runner.transform.localPosition = Vector3.Lerp(startLocal, portalTargetLocal, t);
-                        runner.transform.localRotation = Quaternion.Slerp(runner.transform.localRotation, Quaternion.Euler(0f, 45f, 0f), t);
-                    }
-                    else
-                    {
-                        runner.transform.position = Vector3.Lerp(startLocal, portalTargetLocal, t);
-                    }
+                    runner.transform.position = Vector3.Lerp(startWorld, portalTargetPos, t);
+                    runner.transform.rotation = Quaternion.Slerp(startWorldRot, targetWorldRot, t);
                     yield return null;
                 }
             }

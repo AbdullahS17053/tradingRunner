@@ -18,7 +18,7 @@ EditorBuildSettings:
     path: Assets/Scenes/Labyrinth.unity
     guid: 4b935f1e0df6bc24ea294c78633601d3
   - enabled: 1
-    path: Assets/Scenes/Castle level.unity
-    guid: 1855efeebd18ca143890c3b8a00b2d98
+    path: Assets/Scenes/CastleRunner.unity
+    guid: 451e4c85723c54988f84c6b911e1b102
   m_configObjects: {}
   m_UseUCBPForAssetBundles: 0

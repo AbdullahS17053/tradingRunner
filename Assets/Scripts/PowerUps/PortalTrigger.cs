@@ -223,8 +223,8 @@ public class PortalTrigger : MonoBehaviour
     }
 
     // Non-repeating world playlist / bag across all 4 gameplay levels:
-    // 0 = City, 2 = Space, 3 = Labyrinth, 4 = Castle
-    public static readonly int[] AllGameplayScenes = new int[] { 0, 2, 3, 4 };
+    // 1 = City, 2 = Space, 3 = Labyrinth, 4 = CastleRunner
+    public static readonly int[] AllGameplayScenes = new int[] { 1, 2, 3, 4 };
     private static System.Collections.Generic.List<int> unvisitedScenes = new System.Collections.Generic.List<int>();
     private static int lastVisitedSceneIndex = -1;
 
@@ -237,13 +237,13 @@ public class PortalTrigger : MonoBehaviour
     public static int GetNextDestinationScene(int currentSceneIndex, string currentSceneName)
     {
         int resolvedCurrentIndex = currentSceneIndex;
-        if (resolvedCurrentIndex < 0 || resolvedCurrentIndex == 1) // 1 is MainMenu
+        if (resolvedCurrentIndex <= 0) // 0 is MainMenu
         {
-            if (currentSceneName.Equals("City", System.StringComparison.OrdinalIgnoreCase) || currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase)) resolvedCurrentIndex = 0;
+            if (currentSceneName.Equals("City", System.StringComparison.OrdinalIgnoreCase) || currentSceneName.Equals("Main", System.StringComparison.OrdinalIgnoreCase)) resolvedCurrentIndex = 1;
             else if (currentSceneName.IndexOf("space", System.StringComparison.OrdinalIgnoreCase) >= 0) resolvedCurrentIndex = 2;
             else if (currentSceneName.IndexOf("labyrinth", System.StringComparison.OrdinalIgnoreCase) >= 0) resolvedCurrentIndex = 3;
             else if (currentSceneName.IndexOf("castle", System.StringComparison.OrdinalIgnoreCase) >= 0) resolvedCurrentIndex = 4;
-            else resolvedCurrentIndex = 0;
+            else resolvedCurrentIndex = 1;
         }
 
         // Remove the current scene from unvisited pool so we never repeat the current world

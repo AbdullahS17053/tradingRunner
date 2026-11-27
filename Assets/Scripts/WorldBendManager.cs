@@ -34,6 +34,22 @@ public class WorldBendController : MonoBehaviour
         ApplyBendToShader();
     }
 
+    private void OnDestroy()
+    {
+        // Reset global bend state when leaving a curved level so non-bent scenes stay flat
+        var remaining = FindObjectsByType<WorldBendController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        foreach (var ctrl in remaining)
+        {
+            if (ctrl != null && ctrl != this && ctrl.isActiveAndEnabled)
+            {
+                ctrl.ApplyBendToShader();
+                return;
+            }
+        }
+        Shader.SetGlobalFloat(VerticalBendID, 0f);
+        Shader.SetGlobalFloat(HorizontalBendID, 0f);
+    }
+
     public void ApplyBendToShader()
     {
         Shader.SetGlobalFloat(VerticalBendID, verticalBend);

@@ -58,10 +58,18 @@ public class ChunkSpawner : MonoBehaviour
     public int enemyStartChunk = 2;
     public GameObject enemyPrefab;
 
+    [Header("Finite Ending Sequence")]
+    [Tooltip("If assigned, spawns this ending room chunk once after endingChunkCount normal chunks and stops spawning further chunks.")]
+    public TrackChunk endingChunkPrefab;
+    [Tooltip("Number of chunks (including StartChunk) before spawning endingChunkPrefab.")]
+    public int endingChunkCount = 8;
+
     private int totalSpawnedChunks = 0;
     private int nextPowerUpTypeIndex = 0;
     private float powerUpTimer = 4.0f;
     private ObjectPool<TrackChunk> portalChunkPool;
+    private bool endingChunkSpawned = false;
+    private TrackChunk spawnedEndingChunk = null;
 
     private Queue<TrackChunk> activeChunks = new Queue<TrackChunk>();
     private Transform currentConnectionPoint;
@@ -106,6 +114,8 @@ public class ChunkSpawner : MonoBehaviour
         waitingForBranchDecision = false;
         activeBranchingChunk = null;
         branchContinuationPending = false;
+        endingChunkSpawned = false;
+        spawnedEndingChunk = null;
 
         if (startChunkPrefab != null)
         {
@@ -120,9 +130,11 @@ public class ChunkSpawner : MonoBehaviour
             SpawnChunk(startChunkPrefab, null);
         }
 
-        while (activeChunks.Count < concurrentChunks && !waitingForBranchDecision)
+        while (activeChunks.Count < concurrentChunks && !waitingForBranchDecision && !endingChunkSpawned)
         {
+            int countBefore = activeChunks.Count;
             SpawnRandomChunk();
+            if (activeChunks.Count == countBefore) break;
         }
     }
 
@@ -158,6 +170,11 @@ public class ChunkSpawner : MonoBehaviour
         if (activeChunks.Count == 0) return;
 
         TrackChunk oldestChunk = activeChunks.Peek();
+
+        if (oldestChunk != null && oldestChunk == spawnedEndingChunk)
+        {
+            return;
+        }
 
         bool shouldDespawn;
         if (!enableLabyrinthTurns)
@@ -208,9 +225,11 @@ public class ChunkSpawner : MonoBehaviour
 
             RecycleChunk(despawningChunk);
 
-            while (activeChunks.Count < concurrentChunks && !waitingForBranchDecision)
+            while (activeChunks.Count < concurrentChunks && !waitingForBranchDecision && !endingChunkSpawned)
             {
+                int countBefore = activeChunks.Count;
                 SpawnRandomChunk();
+                if (activeChunks.Count == countBefore) break;
             }
         }
     }
@@ -278,7 +297,15 @@ public class ChunkSpawner : MonoBehaviour
 
     private void SpawnRandomChunk()
     {
-        if (waitingForBranchDecision) return;
+        if (waitingForBranchDecision || endingChunkSpawned) return;
+
+        if (!branchContinuationPending && endingChunkPrefab != null && totalSpawnedChunks >= endingChunkCount)
+        {
+            endingChunkSpawned = true;
+            lastSpawnedPrefab = endingChunkPrefab;
+            SpawnChunk(endingChunkPrefab, null);
+            return;
+        }
 
         if (branchContinuationPending)
         {
@@ -514,15 +541,20 @@ public class ChunkSpawner : MonoBehaviour
 
         currentConnectionPoint = newChunk.connectionPoint;
 
+        bool isEndingChunk = (endingChunkPrefab != null && prefab == endingChunkPrefab);
+        if (isEndingChunk)
+        {
+            spawnedEndingChunk = newChunk;
+        }
         bool isLinearChunk = (prefab.connectionPoint == null || Mathf.Abs(Mathf.DeltaAngle(0f, prefab.connectionPoint.localEulerAngles.y)) < 15f);
 
         // Fallback procedural portal creation only if no dedicated portalChunkPrefab was configured
-        if (portalChunkPrefab == null && enablePortalSpawning && totalSpawnedChunks >= portalInterval && (totalSpawnedChunks % portalInterval == 0) && isLinearChunk)
+        if (!isEndingChunk && portalChunkPrefab == null && enablePortalSpawning && totalSpawnedChunks >= portalInterval && (totalSpawnedChunks % portalInterval == 0) && isLinearChunk)
         {
             Vector3 gatePos = new Vector3(0f, 0.05f, 15f);
             PortalTrigger.CreatePortalGate(newChunk.transform, gatePos);
         }
-        else if (enablePowerUpSpawning && (totalSpawnedChunks > initialChunkGracePeriod) && (totalSpawnedChunks == 2 || powerUpTimer >= 5.0f))
+        else if (!isEndingChunk && enablePowerUpSpawning && (totalSpawnedChunks > initialChunkGracePeriod) && (totalSpawnedChunks == 2 || powerUpTimer >= 5.0f))
         {
             if (PowerUpManager.Instance != null && PowerUpManager.Instance.CanSpawnPowerUp)
             {
@@ -534,10 +566,88 @@ public class ChunkSpawner : MonoBehaviour
         }
 
         // Procedural enemy spawning on linear chunks
-        if (enableEnemySpawning && totalSpawnedChunks >= enemyStartChunk && (totalSpawnedChunks % enemyInterval == 0) && isLinearChunk)
+        if (!isEndingChunk && enableEnemySpawning && totalSpawnedChunks >= enemyStartChunk && (totalSpawnedChunks % enemyInterval == 0) && isLinearChunk)
         {
             SpawnEnemyOnChunk(newChunk);
         }
+
+        SubdivideLongBendMeshes(newChunk.gameObject);
+    }
+
+    private static Mesh cachedSubdividedCubeMesh;
+
+    private static void SubdivideLongBendMeshes(GameObject chunkRoot)
+    {
+        if (chunkRoot == null) return;
+        if (FindFirstObjectByType<WorldBendController>() == null) return;
+
+        foreach (MeshFilter mf in chunkRoot.GetComponentsInChildren<MeshFilter>(true))
+        {
+            if (mf == null || mf.sharedMesh == null) continue;
+            if (mf.sharedMesh.name != "Cube") continue;
+            if (mf.transform.lossyScale.z <= 6f) continue;
+
+            mf.sharedMesh = GetOrBuildSubdividedUnitCube(16);
+        }
+    }
+
+    private static Mesh GetOrBuildSubdividedUnitCube(int zSegments)
+    {
+        if (cachedSubdividedCubeMesh != null) return cachedSubdividedCubeMesh;
+
+        var verts = new System.Collections.Generic.List<Vector3>();
+        var norms = new System.Collections.Generic.List<Vector3>();
+        var uvs = new System.Collections.Generic.List<Vector2>();
+        var tris = new System.Collections.Generic.List<int>();
+
+        void AddSegmentedQuad(Vector3 origin, Vector3 uAxis, Vector3 vAxis, Vector3 normal, int uSteps, int vSteps)
+        {
+            int baseIdx = verts.Count;
+            for (int v = 0; v <= vSteps; v++)
+            {
+                float vf = v / (float)vSteps;
+                for (int u = 0; u <= uSteps; u++)
+                {
+                    float uf = u / (float)uSteps;
+                    verts.Add(origin + uAxis * uf + vAxis * vf);
+                    norms.Add(normal);
+                    uvs.Add(new Vector2(uf, vf));
+                }
+            }
+
+            int stride = uSteps + 1;
+            for (int v = 0; v < vSteps; v++)
+            {
+                for (int u = 0; u < uSteps; u++)
+                {
+                    int i0 = baseIdx + v * stride + u;
+                    int i1 = i0 + 1;
+                    int i2 = i0 + stride;
+                    int i3 = i2 + 1;
+                    tris.Add(i0); tris.Add(i2); tris.Add(i1);
+                    tris.Add(i1); tris.Add(i2); tris.Add(i3);
+                }
+            }
+        }
+
+        // Top (+Y) and Bottom (-Y): segmented along Z (vAxis)
+        AddSegmentedQuad(new Vector3(-0.5f, 0.5f, -0.5f), Vector3.right, Vector3.forward, Vector3.up, 1, zSegments);
+        AddSegmentedQuad(new Vector3(-0.5f, -0.5f, 0.5f), Vector3.right, Vector3.back, Vector3.down, 1, zSegments);
+        // Left (-X) and Right (+X): segmented along Z (uAxis)
+        AddSegmentedQuad(new Vector3(-0.5f, -0.5f, 0.5f), Vector3.back, Vector3.up, Vector3.left, zSegments, 1);
+        AddSegmentedQuad(new Vector3(0.5f, -0.5f, -0.5f), Vector3.forward, Vector3.up, Vector3.right, zSegments, 1);
+        // Front (-Z) and Back (+Z): 1x1 quads
+        AddSegmentedQuad(new Vector3(-0.5f, -0.5f, -0.5f), Vector3.right, Vector3.up, Vector3.back, 1, 1);
+        AddSegmentedQuad(new Vector3(0.5f, -0.5f, 0.5f), Vector3.left, Vector3.up, Vector3.forward, 1, 1);
+
+        Mesh mesh = new Mesh { name = "SubdividedBendCube" };
+        mesh.SetVertices(verts);
+        mesh.SetNormals(norms);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateBounds();
+        cachedSubdividedCubeMesh = mesh;
+        return cachedSubdividedCubeMesh;
     }
 
     private void SpawnEnemyOnChunk(TrackChunk chunk)

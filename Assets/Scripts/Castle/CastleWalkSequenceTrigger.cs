@@ -23,6 +23,16 @@ namespace RunnerForex.Castle
             rb.useGravity = false;
         }
 
+        private void Start()
+        {
+            var controller = CastleSequenceController.EnsureInstanceExists();
+            if (controller != null)
+            {
+                Transform endChunkRoot = transform.parent != null ? transform.parent : transform;
+                controller.RegisterEndingChunk(endChunkRoot);
+            }
+        }
+
         private void OnTriggerEnter(Collider other)
         {
             HandleTrigger(other);
