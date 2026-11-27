@@ -39,11 +39,17 @@ public class SwipeController : MonoBehaviour
                 touchEndPos = touch.position;
                 CheckSwipe();
             }
-            else if (touch.phase == TouchPhase.Ended)
+            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
                 hasSwiped = false;
                 touchStartedOnUI = false;
             }
+        }
+        else if (!Input.GetMouseButton(0) && !Input.GetMouseButtonUp(0))
+        {
+            // Safety net: if a touch/mouse release was missed (app focus loss,
+            // cancel outside the window) do not leave the gesture flag stuck.
+            hasSwiped = false;
         }
 
         if (Input.GetMouseButtonDown(0))

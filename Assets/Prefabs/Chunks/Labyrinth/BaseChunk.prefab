@@ -226,7 +226,7 @@ Transform:
   m_GameObject: {fileID: 1314517183104319341}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 32.5}
+  m_LocalPosition: {x: 0, y: 0, z: 32.258}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1495,6 +1495,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   connectionPoint: {fileID: 6301727159292256234}
   coinsParent: {fileID: 5105482780232063916}
+  isBranchingChunk: 0
+  leftConnectionPoint: {fileID: 0}
+  rightConnectionPoint: {fileID: 0}
 --- !u!1 &7840512416513918548
 GameObject:
   m_ObjectHideFlags: 0

@@ -105,7 +105,16 @@ public class GameManager : MonoBehaviour
             gameOverPanel.SetActive(false);
         }
 
-        if (SceneManager.GetActiveScene().buildIndex != 1)
+        bool isMainMenu = SceneManager.GetActiveScene().name.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase);
+        if (isMainMenu)
+        {
+            if (playerAnimator != null)
+            {
+                playerAnimator.SetBool("GameStarted", false);
+                playerAnimator.Play("StandingIdle", 0, 0f);
+            }
+        }
+        else
         {
             gameStarted = true;
             if (playerAnimator != null)
@@ -263,7 +272,7 @@ public class GameManager : MonoBehaviour
     {
         if (LevelLoader.Instance != null)
         {
-            LevelLoader.Instance.LoadScene(0);
+            LevelLoader.Instance.LoadScene(1);
         }
     }
 

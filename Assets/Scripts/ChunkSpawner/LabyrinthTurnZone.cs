@@ -50,23 +50,49 @@ public class LabyrinthTurnZone : MonoBehaviour
 
     private void Update()
     {
+        AnimateIndicators();
+
         if (hasTriggered || activeRunner == null) return;
 
+        // Check if player has run past the turning apex towards the wall without turning
         Transform pivot = (turnAngle < 0f && leftPivot != null) ? leftPivot : (turnAngle > 0f && rightPivot != null ? rightPivot : turnPivot);
         if (pivot != null)
         {
             Vector3 toPlayer = activeRunner.transform.position - pivot.position;
             float forwardDot = Vector3.Dot(toPlayer, transform.forward);
-            // When runner reaches apex of corner, safely execute corner turn
-            if (forwardDot >= -0.3f)
+            // Apex is at forwardDot ~ 0 (z = 19.5). Back wall is at forwardDot ~ 5.6 (z = 25.1).
+            // If the player ran past the turn window towards the wall without turning, they crash!
+            if (forwardDot > 5.0f && !activeRunner.IsDead)
             {
-                ExecuteTurn(activeRunner, turnAngle);
+                activeRunner.Die();
             }
+        }
+    }
+
+    private void AnimateIndicators()
+    {
+        float pulse = 1.0f + 0.15f * Mathf.Sin(Time.time * 8f);
+        if (leftArrowIndicator != null && leftArrowIndicator.activeSelf)
+        {
+            leftArrowIndicator.transform.localScale = new Vector3(1.6f * pulse, 2.2f * pulse, 0.05f);
+        }
+        if (rightArrowIndicator != null && rightArrowIndicator.activeSelf)
+        {
+            rightArrowIndicator.transform.localScale = new Vector3(1.6f * pulse, 2.2f * pulse, 0.05f);
         }
     }
 
     private void SetupDefaultPivots()
     {
+        if (leftPivot == null)
+        {
+            leftPivot = FindSiblingOrChild("TurnPivot_Left") ?? FindSiblingOrChild("TurnPivotLeft");
+        }
+        if (rightPivot == null)
+        {
+            rightPivot = FindSiblingOrChild("TurnPivot_Right") ?? FindSiblingOrChild("TurnPivotRight");
+        }
+
         if (turnPivot != null)
         {
             if (turnAngle <= -45f && leftPivot == null) leftPivot = turnPivot;
@@ -80,7 +106,7 @@ public class LabyrinthTurnZone : MonoBehaviour
                 GameObject lp = new GameObject("GeneratedLeftPivot");
                 lp.transform.SetParent(transform.parent != null ? transform.parent : transform, false);
                 lp.transform.localPosition = rightPivot.localPosition;
-                lp.transform.localRotation = Quaternion.Euler(0f, 270f, 0f);
+                lp.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
                 leftPivot = lp.transform;
             }
             else if (rightPivot == null && leftPivot != null)
@@ -91,7 +117,42 @@ public class LabyrinthTurnZone : MonoBehaviour
                 rp.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
                 rightPivot = rp.transform;
             }
+            else if (leftPivot == null && rightPivot == null)
+            {
+                Vector3 pivotPos = turnPivot != null ? turnPivot.localPosition : new Vector3(0f, 0f, 19.5f);
+                GameObject lp = new GameObject("GeneratedLeftPivot");
+                lp.transform.SetParent(transform.parent != null ? transform.parent : transform, false);
+                lp.transform.localPosition = pivotPos;
+                lp.transform.localRotation = Quaternion.Euler(0f, -90f, 0f);
+                leftPivot = lp.transform;
+
+                GameObject rp = new GameObject("GeneratedRightPivot");
+                rp.transform.SetParent(transform.parent != null ? transform.parent : transform, false);
+                rp.transform.localPosition = pivotPos;
+                rp.transform.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                rightPivot = rp.transform;
+            }
         }
+    }
+
+    private Transform FindSiblingOrChild(string pivotName)
+    {
+        if (transform.parent != null)
+        {
+            Transform sibling = transform.parent.Find(pivotName);
+            if (sibling != null) return sibling;
+            foreach (Transform t in transform.parent)
+            {
+                if (t.name == pivotName) return t;
+            }
+        }
+        Transform child = transform.Find(pivotName);
+        if (child != null) return child;
+        foreach (Transform t in transform)
+        {
+            if (t.name == pivotName) return t;
+        }
+        return null;
     }
 
     private void CreateProceduralIndicatorsIfMissing()
@@ -177,6 +238,8 @@ public class LabyrinthTurnZone : MonoBehaviour
     {
         if (hasTriggered) return false;
 
+        SetupDefaultPivots();
+
         Transform chosenPivot = null;
         float finalAngle = requestedAngle;
 
@@ -196,8 +259,12 @@ public class LabyrinthTurnZone : MonoBehaviour
         hasTriggered = true;
         runner.UnregisterActiveTurnZone(this);
 
+        // Derive guaranteed correct world orientation for the new branch direction
+        Transform baseRef = transform.parent != null ? transform.parent : transform;
+        Quaternion branchRotation = baseRef.rotation * Quaternion.Euler(0f, finalAngle, 0f);
+
         // Execute corner turn on runner
-        runner.ExecuteCornerTurn(chosenPivot.position, chosenPivot.rotation, finalAngle);
+        runner.ExecuteCornerTurn(chosenPivot.position, branchRotation, finalAngle);
 
         // Play corner turning sound
         if (SoundManager.Instance != null && SoundManager.Instance.correctStrategySound != null)
@@ -205,11 +272,15 @@ public class LabyrinthTurnZone : MonoBehaviour
             SoundManager.Instance.PlaySFX(SoundManager.Instance.correctStrategySound);
         }
 
-        // Notify ChunkSpawner so future chunks align to the chosen branch
-        var spawner = FindFirstObjectByType<ChunkSpawner>();
-        if (spawner != null)
+        // Notify ChunkSpawner so future chunks align to the chosen branch ONLY for 2-way branching junctions
+        if (turnMode == TurnDirectionMode.Both)
         {
-            spawner.OnLabyrinthBranchChosen(finalAngle, chosenPivot);
+            var spawner = FindFirstObjectByType<ChunkSpawner>();
+            if (spawner != null)
+            {
+                TrackChunk parentChunk = GetComponentInParent<TrackChunk>();
+                spawner.OnLabyrinthBranchChosen(parentChunk, finalAngle, chosenPivot);
+            }
         }
 
         return true;
