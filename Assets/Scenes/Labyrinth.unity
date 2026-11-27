@@ -6656,13 +6656,6 @@ MonoBehaviour:
     type: 3}
   speedBoostPowerUpPrefab: {fileID: 6588334547211602384, guid: 934e0d03b40039c43bfbf3a9813c3d50,
     type: 3}
-<<<<<<< Updated upstream
-  enableEnemySpawning: 1
-  enemyInterval: 3
-  enemyStartChunk: 2
-  enemyPrefab: {fileID: 6271747571894860710, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90,
-    type: 3}
-=======
   coinMagnetPowerUpPrefab: {fileID: 6588334547211602384, guid: a8d02845a7474bdb96e1a8911e922179,
     type: 3}
   doubleTPPowerUpPrefab: {fileID: 1209053558633307950, guid: 0ea25a6e63f1e3f4bb62115461af50ab,
@@ -6674,7 +6667,11 @@ MonoBehaviour:
   invincibilityPowerUpPrefab: {fileID: 602827494942177698, guid: 7638c3b680a4c1c4ba5a6a46e1d666c6,
     type: 3}
   powerUpClearanceRadius: 2.2
->>>>>>> Stashed changes
+  enableEnemySpawning: 1
+  enemyInterval: 3
+  enemyStartChunk: 2
+  enemyPrefab: {fileID: 6271747571894860710, guid: a1b2c3d4e5f60718293a4b5c6d7e8f90,
+    type: 3}
 --- !u!1 &1236283798
 GameObject:
   m_ObjectHideFlags: 0

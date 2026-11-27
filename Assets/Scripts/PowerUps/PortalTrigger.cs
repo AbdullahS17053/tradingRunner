@@ -82,37 +82,13 @@ public class PortalTrigger : MonoBehaviour
             SoundManager.Instance.PlaySFX(SoundManager.Instance.correctStrategySound);
         }
 
-<<<<<<< Updated upstream
         // 4. Randomly select next world from non-repeating world bag
-=======
-        // 4. Randomly select next playable world (excluding the current world and menu scenes)
->>>>>>> Stashed changes
         int nextScene = targetSceneIndex;
         if (nextScene < 0 || !IsPlayableWorldScene(nextScene))
         {
             int currentIndex = SceneManager.GetActiveScene().buildIndex;
-<<<<<<< Updated upstream
+            string currentSceneName = SceneManager.GetActiveScene().name;
             nextScene = GetNextDestinationScene(currentIndex, currentSceneName);
-=======
-            System.Collections.Generic.List<int> candidateScenes = new System.Collections.Generic.List<int>();
-
-            for (int buildIndex = 0; buildIndex < SceneManager.sceneCountInBuildSettings; buildIndex++)
-            {
-                if (buildIndex != currentIndex && IsPlayableWorldScene(buildIndex))
-                {
-                    candidateScenes.Add(buildIndex);
-                }
-            }
-
-            if (candidateScenes.Count > 0)
-            {
-                nextScene = candidateScenes[Random.Range(0, candidateScenes.Count)];
-            }
-            else
-            {
-                nextScene = currentIndex;
-            }
->>>>>>> Stashed changes
         }
 
         // 5. Smooth load through LevelLoader (fades to black then loads scene)

@@ -421,7 +421,6 @@ public class PowerUpManager : MonoBehaviour
             instance.transform.localRotation = (type == PowerUpType.SpeedBoost) ? Quaternion.Euler(12f, 180f, 0f) : Quaternion.identity;
             instance.transform.localScale = GetVFXScale(type, isSpaceship);
 
-<<<<<<< Updated upstream
             if (type == PowerUpType.SpeedBoost)
             {
                 ParticleSystem[] psList = instance.GetComponentsInChildren<ParticleSystem>();
@@ -462,7 +461,8 @@ public class PowerUpManager : MonoBehaviour
                         ship.thrusterFXRoot.transform.localScale = Vector3.one * 1.6f;
                     }
                 }
-=======
+            }
+
             if (type == PowerUpType.CoinMagnet)
             {
                 Light lt = instance.AddComponent<Light>();
@@ -470,7 +470,6 @@ public class PowerUpManager : MonoBehaviour
                 lt.range = 6.0f;
                 lt.intensity = 3.5f;
                 lt.color = new Color(0.85f, 0.15f, 1f);
->>>>>>> Stashed changes
             }
 
             attachedVFX[type] = instance;

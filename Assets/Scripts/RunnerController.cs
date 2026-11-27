@@ -170,17 +170,10 @@ public class RunnerController : MonoBehaviour
         if (isDead || isWarping) return;
         if (GameManager.Instance != null && !GameManager.Instance.IsGameStarted) return;
 
-<<<<<<< Updated upstream
-        if (controller != null && controller.enabled && controller.isGrounded)
-            groundedGraceTimer = 0.12f;
-        else if (groundedGraceTimer > 0f)
-            groundedGraceTimer -= Time.deltaTime;
-=======
         float dt = Time.deltaTime;
 
         UpdateGroundedState(dt);
         HandleBufferedInput(dt);
->>>>>>> Stashed changes
 
         if (enableAutoPilot)
         {
@@ -525,19 +518,14 @@ public class RunnerController : MonoBehaviour
             float newX = Mathf.Lerp(currentX, targetXPosition, laneSwitchSpeed * Time.deltaTime);
             float moveX = newX - currentX;
 
-<<<<<<< Updated upstream
             Vector3 localMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
             Vector3 worldMoveVector = transform.parent != null ? transform.parent.TransformDirection(localMoveVector) : localMoveVector;
 
             if (controller != null && controller.enabled)
             {
                 controller.Move(worldMoveVector);
+                if (controller.isGrounded) groundedGraceTimer = coyoteTime;
             }
-=======
-            Vector3 linearMoveVector = new Vector3(moveX, velocity.y * Time.deltaTime, currentForwardSpeed * Time.deltaTime);
-            controller.Move(linearMoveVector);
-            if (controller.isGrounded) groundedGraceTimer = coyoteTime;
->>>>>>> Stashed changes
             return;
         }
 

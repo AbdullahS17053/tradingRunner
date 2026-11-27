@@ -20,11 +20,6 @@ public class PowerUpHUD : MonoBehaviour
                 _instance = Object.FindAnyObjectByType<PowerUpHUD>(FindObjectsInactive.Include);
                 if (_instance == null)
                 {
-<<<<<<< Updated upstream
-                    GameObject go = new GameObject("PowerUpHUD");
-                    _instance = go.AddComponent<PowerUpHUD>();
-                    DontDestroyOnLoad(go);
-=======
                     Canvas canvas = FindGameCanvas();
                     if (canvas != null)
                     {
@@ -32,7 +27,12 @@ public class PowerUpHUD : MonoBehaviour
                         go.transform.SetParent(canvas.transform, false);
                         _instance = go.AddComponent<PowerUpHUD>();
                     }
->>>>>>> Stashed changes
+                    else
+                    {
+                        GameObject go = new GameObject("PowerUpHUD");
+                        _instance = go.AddComponent<PowerUpHUD>();
+                        DontDestroyOnLoad(go);
+                    }
                 }
             }
             if (_instance != null && !_instance.gameObject.activeSelf)
@@ -541,30 +541,12 @@ public class PowerUpHUD : MonoBehaviour
 
     private void CreateAnnouncementToast(string text, Color bannerColor)
     {
-<<<<<<< Updated upstream
         if (!gameObject.activeSelf)
         {
             gameObject.SetActive(true);
         }
 
-        Canvas canvas = null;
-        Canvas[] allCanvases = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
-        foreach (var c in allCanvases)
-        {
-            if (c != null && c.isActiveAndEnabled && c.gameObject.activeInHierarchy)
-            {
-                if (c.name.Contains("HUD") || c.name.Contains("Gameplay"))
-                {
-                    canvas = c;
-                    break;
-                }
-                if (canvas == null) canvas = c;
-            }
-        }
-
-=======
         Canvas canvas = FindGameCanvas();
->>>>>>> Stashed changes
         if (canvas == null) return;
 
         if (activeToastObj != null)
@@ -574,11 +556,8 @@ public class PowerUpHUD : MonoBehaviour
 
         activeToastObj = new GameObject("AnnouncementToast", typeof(RectTransform), typeof(CanvasGroup));
         activeToastObj.transform.SetParent(canvas.transform, false);
-<<<<<<< Updated upstream
         activeToastObj.SetActive(true);
-=======
         activeToastObj.transform.SetAsLastSibling();
->>>>>>> Stashed changes
 
         RectTransform rt = activeToastObj.GetComponent<RectTransform>();
         rt.anchorMin = new Vector2(0.5f, 0.82f);
@@ -618,28 +597,9 @@ public class PowerUpHUD : MonoBehaviour
         TMP_FontAsset font = ResolveFont();
         if (font != null) tmp.font = font;
 
-<<<<<<< Updated upstream
         // Run animation directly on active toast GameObject component to guarantee active coroutine execution
         ToastAnimationRunner runner = activeToastObj.AddComponent<ToastAnimationRunner>();
         runner.StartAnimation(activeToastObj.GetComponent<CanvasGroup>());
-=======
-        if (activeToastRoutine != null && isActiveAndEnabled)
-        {
-            StopCoroutine(activeToastRoutine);
-            activeToastRoutine = null;
-        }
-
-        if (isActiveAndEnabled)
-        {
-            activeToastRoutine = StartCoroutine(ToastAnimationRoutine(activeToastObj));
-        }
-        else
-        {
-            // A scene can keep the HUD disabled while still using it for portal announcements.
-            // Let Unity clean up the toast without trying to start a coroutine on this object.
-            Destroy(activeToastObj, 2.4f);
-        }
->>>>>>> Stashed changes
     }
 
     public class ToastAnimationRunner : MonoBehaviour
