@@ -71,13 +71,16 @@ namespace SciFiUI.Screens
 
         private void OnMainMenuClicked()
         {
+            PortalTrigger.ResetLevelBag();
+            GameManager.isLoopingRun = false;
+
             if (LevelLoader.Instance != null)
             {
-                LevelLoader.Instance.LoadScene(1); // 1 = MainMenu
+                LevelLoader.Instance.LoadScene(0); // 0 = MainMenu
             }
             else
             {
-                UnityEngine.SceneManagement.SceneManager.LoadScene(1);
+                UnityEngine.SceneManagement.SceneManager.LoadScene(0);
             }
         }
     }

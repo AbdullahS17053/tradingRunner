@@ -54,7 +54,7 @@ namespace SciFiUI.Screens
         [SerializeField] private float cameraTransitionDuration = 1.2f;
         [SerializeField] private float standCompletionWait = 0.15f;
         [SerializeField] private string targetGameplaySceneName = "City";
-        [SerializeField] private int targetGameplaySceneIndex = 0; // Fallback index
+        [SerializeField] private int targetGameplaySceneIndex = 1; // 1 = City (fallback index)
 
         [Header("Settings Panel")]
         [SerializeField] private GameObject settingsPanel;
