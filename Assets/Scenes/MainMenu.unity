@@ -2421,16 +2421,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   musicSource: {fileID: 326988912}
   sfxSource: {fileID: 326988911}
-  cyberpunkBGM: {fileID: 0}
-  collectTPSound: {fileID: 0}
-  correctStrategySound: {fileID: 0}
-  wrongStrategySound: {fileID: 0}
-  gameOverSound: {fileID: 0}
-  crashSound: {fileID: 0}
-  fomoLaserShotSound: {fileID: 0}
-  fomoOpenGunSound: {fileID: 0}
-  fomoAscendSound: {fileID: 0}
-  fomoDescendSound: {fileID: 0}
+  menuBGM: {fileID: 8300000, guid: 9828798c26e0cc643ae6605ad5701b95, type: 3}
+  cityBGM: {fileID: 8300000, guid: 1d0822ee4dfd6482bad2a30a0eb95bfb, type: 3}
+  spaceBGM: {fileID: 8300000, guid: 0b439b1dc8c4a39478422916ff853145, type: 3}
+  labyrinthBGM: {fileID: 8300000, guid: 0602e3e8c3dfc3943b9a4803acbff810, type: 3}
+  cyberpunkBGM: {fileID: 8300000, guid: 1d0822ee4dfd6482bad2a30a0eb95bfb, type: 3}
+  collectTPSound: {fileID: 8300000, guid: c6f25426102833d118458078f966cb8e, type: 3}
+  correctStrategySound: {fileID: 8300000, guid: 394029fecbdf78eb99f7de0b5d770578, type: 3}
+  wrongStrategySound: {fileID: 8300000, guid: c0f30b0f3e0aba557b8daab0ca8d6836, type: 3}
+  gameOverSound: {fileID: 8300000, guid: d6aa2559dd53196248a7c4d51b883034, type: 3}
+  crashSound: {fileID: 8300000, guid: e7342034e19a29ce2907232d56c2b2d8, type: 3}
+  fomoLaserShotSound: {fileID: 8300000, guid: d831dbb5689f3e22a85e33a0772da11f, type: 3}
+  fomoOpenGunSound: {fileID: 8300000, guid: e40c7f37b250bee45b360dd6f5c31a93, type: 3}
+  fomoAscendSound: {fileID: 8300000, guid: 74fbbd4c83bc94cab8668394e7924044, type: 3}
+  fomoDescendSound: {fileID: 8300000, guid: e378c3d5aa79ecfb6a6bc45386626605, type: 3}
   uiClickSound: {fileID: 8300000, guid: 71016cb3af1e450a9bee7dbbccaf8d4b, type: 3}
 --- !u!82 &326988911
 AudioSource:

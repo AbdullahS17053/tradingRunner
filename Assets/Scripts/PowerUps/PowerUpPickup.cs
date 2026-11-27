@@ -138,7 +138,7 @@ public class PowerUpPickup : MonoBehaviour
         {
             case PowerUpType.Shield: return new Color(0.1f, 0.75f, 1f); // Cyan
             case PowerUpType.SpeedBoost: return new Color(1f, 0.45f, 0.05f); // Orange
-            case PowerUpType.CoinMagnet: return new Color(0.1f, 0.95f, 0.5f); // Mint Green
+            case PowerUpType.CoinMagnet: return new Color(0.85f, 0.15f, 1f); // Neon Magenta / Purple
             case PowerUpType.DoubleTP: return new Color(1f, 0.85f, 0.1f); // Gold
             case PowerUpType.WeaponUpgrade: return new Color(1f, 0.15f, 0.25f); // Crimson
             case PowerUpType.SlowMotion: return new Color(0.35f, 0.75f, 1f); // Ice Blue
@@ -153,7 +153,7 @@ public class PowerUpPickup : MonoBehaviour
         {
             case PowerUpType.Shield: return "SHIELD";
             case PowerUpType.SpeedBoost: return "BOOST 2X";
-            case PowerUpType.CoinMagnet: return "MAGNET";
+            case PowerUpType.CoinMagnet: return "COIN MAGNET";
             case PowerUpType.DoubleTP: return "x2 PROFIT";
             case PowerUpType.WeaponUpgrade: return "LASER CANNON";
             case PowerUpType.SlowMotion: return "SLOW MOTION";

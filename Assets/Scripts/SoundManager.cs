@@ -11,6 +11,15 @@ public class SoundManager : MonoBehaviour
     public AudioSource sfxSource;
 
     [Header("Background Music")]
+    [Tooltip("Theme music played on the Main Menu")]
+    public AudioClip menuBGM;
+    [Tooltip("Theme music played on the City level")]
+    public AudioClip cityBGM;
+    [Tooltip("Theme music played on the Space level")]
+    public AudioClip spaceBGM;
+    [Tooltip("Theme music played on the Labyrinth level")]
+    public AudioClip labyrinthBGM;
+    [Tooltip("Legacy fallback for cyberpunk background music")]
     public AudioClip cyberpunkBGM;
 
     [Header("Sound Effects")]
@@ -32,6 +41,7 @@ public class SoundManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
+            Instance.AdoptClipsFrom(this);
             Destroy(gameObject);
             return;
         }
@@ -42,7 +52,85 @@ public class SoundManager : MonoBehaviour
             transform.SetParent(null);
         }
         DontDestroyOnLoad(gameObject);
+        EnsureClipsLoaded();
         LoadVolumeSettings();
+    }
+
+    public void AdoptClipsFrom(SoundManager other)
+    {
+        if (other == null) return;
+        if (menuBGM == null) menuBGM = other.menuBGM;
+        if (cityBGM == null) cityBGM = other.cityBGM;
+        if (spaceBGM == null) spaceBGM = other.spaceBGM;
+        if (labyrinthBGM == null) labyrinthBGM = other.labyrinthBGM;
+        if (cyberpunkBGM == null) cyberpunkBGM = other.cyberpunkBGM;
+
+        if (collectTPSound == null) collectTPSound = other.collectTPSound;
+        if (correctStrategySound == null) correctStrategySound = other.correctStrategySound;
+        if (wrongStrategySound == null) wrongStrategySound = other.wrongStrategySound;
+        if (gameOverSound == null) gameOverSound = other.gameOverSound;
+        if (crashSound == null) crashSound = other.crashSound;
+        if (fomoLaserShotSound == null) fomoLaserShotSound = other.fomoLaserShotSound;
+        if (fomoOpenGunSound == null) fomoOpenGunSound = other.fomoOpenGunSound;
+        if (fomoAscendSound == null) fomoAscendSound = other.fomoAscendSound;
+        if (fomoDescendSound == null) fomoDescendSound = other.fomoDescendSound;
+        if (uiClickSound == null) uiClickSound = other.uiClickSound;
+    }
+
+    public void EnsureClipsLoaded()
+    {
+        if (cityBGM == null && cyberpunkBGM != null)
+        {
+            cityBGM = cyberpunkBGM;
+        }
+        if (cyberpunkBGM == null && cityBGM != null)
+        {
+            cyberpunkBGM = cityBGM;
+        }
+
+        if (cityBGM == null)
+        {
+            cityBGM = Resources.Load<AudioClip>("Audio/BGM/City_Theme");
+            if (cyberpunkBGM == null) cyberpunkBGM = cityBGM;
+        }
+        if (spaceBGM == null)
+        {
+            spaceBGM = Resources.Load<AudioClip>("Audio/BGM/Space_Theme");
+        }
+        if (labyrinthBGM == null)
+        {
+            labyrinthBGM = Resources.Load<AudioClip>("Audio/BGM/Labyrinth_Theme");
+        }
+        if (menuBGM == null)
+        {
+            menuBGM = Resources.Load<AudioClip>("Audio/BGM/Menu_Theme");
+        }
+    }
+
+    public AudioClip GetBGMForScene(string sceneName)
+    {
+        EnsureClipsLoaded();
+        if (string.IsNullOrEmpty(sceneName))
+        {
+            return cityBGM ?? cyberpunkBGM;
+        }
+
+        if (sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return menuBGM;
+        }
+        else if (sceneName.Equals("Space", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return spaceBGM != null ? spaceBGM : (cityBGM ?? cyberpunkBGM);
+        }
+        else if (sceneName.Equals("Labyrinth", System.StringComparison.OrdinalIgnoreCase))
+        {
+            return labyrinthBGM != null ? labyrinthBGM : (cityBGM ?? cyberpunkBGM);
+        }
+        else // City or any other gameplay scene
+        {
+            return cityBGM != null ? cityBGM : cyberpunkBGM;
+        }
     }
 
     private void OnEnable()
@@ -57,24 +145,31 @@ public class SoundManager : MonoBehaviour
 
     private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
-        // Whenever a gameplay scene is loaded (or reloaded on restart), ensure background music plays
-        if (scene.buildIndex != 1) // 1 = MainMenu
+        AudioClip targetClip = GetBGMForScene(scene.name);
+        if (targetClip != null)
         {
-            if (musicSource != null && (!musicSource.isPlaying || musicSource.clip == null))
-            {
-                PlayMusic(cyberpunkBGM);
-            }
+            PlayMusic(targetClip);
         }
     }
 
     private void Start()
     {
-        PlayMusic(cyberpunkBGM);
+        string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        AudioClip targetClip = GetBGMForScene(activeScene);
+        if (targetClip != null)
+        {
+            PlayMusic(targetClip);
+        }
     }
 
     public void RestartMusic()
     {
-        PlayMusic(cyberpunkBGM);
+        string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        AudioClip targetClip = GetBGMForScene(activeScene);
+        if (targetClip != null)
+        {
+            PlayMusic(targetClip, forceRestart: true);
+        }
     }
 
     public void LoadVolumeSettings()
@@ -124,12 +219,17 @@ public class SoundManager : MonoBehaviour
         return PlayerPrefs.GetFloat(SFX_KEY, 0.7f);
     }
 
-    public void PlayMusic(AudioClip clip)
+    public void PlayMusic(AudioClip clip, bool forceRestart = false)
     {
         if (clip == null) return;
 
         if (musicSource != null)
         {
+            if (!forceRestart && musicSource.clip == clip && musicSource.isPlaying)
+            {
+                return;
+            }
+
             musicSource.clip = clip;
             musicSource.loop = true;
             musicSource.volume = GetMusicVolume();

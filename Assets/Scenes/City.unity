@@ -5047,6 +5047,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   musicSource: {fileID: 1105979737}
   sfxSource: {fileID: 1105979736}
+  menuBGM: {fileID: 8300000, guid: 9828798c26e0cc643ae6605ad5701b95, type: 3}
+  cityBGM: {fileID: 8300000, guid: 1d0822ee4dfd6482bad2a30a0eb95bfb, type: 3}
+  spaceBGM: {fileID: 8300000, guid: 0b439b1dc8c4a39478422916ff853145, type: 3}
+  labyrinthBGM: {fileID: 8300000, guid: 0602e3e8c3dfc3943b9a4803acbff810, type: 3}
   cyberpunkBGM: {fileID: 8300000, guid: 1d0822ee4dfd6482bad2a30a0eb95bfb, type: 3}
   collectTPSound: {fileID: 8300000, guid: c6f25426102833d118458078f966cb8e, type: 3}
   correctStrategySound: {fileID: 8300000, guid: 394029fecbdf78eb99f7de0b5d770578,
@@ -5058,7 +5062,7 @@ MonoBehaviour:
   fomoOpenGunSound: {fileID: 8300000, guid: e40c7f37b250bee45b360dd6f5c31a93, type: 3}
   fomoAscendSound: {fileID: 8300000, guid: 74fbbd4c83bc94cab8668394e7924044, type: 3}
   fomoDescendSound: {fileID: 8300000, guid: e378c3d5aa79ecfb6a6bc45386626605, type: 3}
-  uiClickSound: {fileID: 0}
+  uiClickSound: {fileID: 8300000, guid: 71016cb3af1e450a9bee7dbbccaf8d4b, type: 3}
 --- !u!4 &1105979735
 Transform:
   m_ObjectHideFlags: 0
@@ -5774,6 +5778,7 @@ MonoBehaviour:
   concurrentChunks: 6
   despawnDistance: 150
   enableLabyrinthTurns: 0
+  tJunctionChunkPrefab: {fileID: 0}
   enablePowerUpSpawning: 1
   powerUpInterval: 4
   initialChunkGracePeriod: 1
@@ -5785,10 +5790,24 @@ MonoBehaviour:
     type: 3}
   speedBoostPowerUpPrefab: {fileID: 6588334547211602384, guid: 934e0d03b40039c43bfbf3a9813c3d50,
     type: 3}
+<<<<<<< Updated upstream
   enableEnemySpawning: 1
   enemyInterval: 3
   enemyStartChunk: 2
   enemyPrefab: {fileID: 0}
+=======
+  coinMagnetPowerUpPrefab: {fileID: 6588334547211602384, guid: a8d02845a7474bdb96e1a8911e922179,
+    type: 3}
+  doubleTPPowerUpPrefab: {fileID: 1209053558633307950, guid: 0ea25a6e63f1e3f4bb62115461af50ab,
+    type: 3}
+  weaponUpgradePowerUpPrefab: {fileID: 1511798392051820032, guid: c141bddb397c6d442a9fc665b30468b9,
+    type: 3}
+  slowMotionPowerUpPrefab: {fileID: 5880965123487185117, guid: c704405fdb9a5f7468cf0262a803e863,
+    type: 3}
+  invincibilityPowerUpPrefab: {fileID: 602827494942177698, guid: 7638c3b680a4c1c4ba5a6a46e1d666c6,
+    type: 3}
+  powerUpClearanceRadius: 2.2
+>>>>>>> Stashed changes
 --- !u!114 &1196818333 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3721015009860077519, guid: 0ae4957731d480d0491f883a240d1b19,
@@ -8822,7 +8841,7 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 1
+          m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 1
@@ -11356,6 +11375,11 @@ PrefabInstance:
       propertyPath: m_LocalRotation.z
       value: -0.2829939
       objectReference: {fileID: 0}
+    - target: {fileID: 6193395075896989753, guid: 582d3b16c257dd07eae49096446a906e,
+        type: 3}
+      propertyPath: enableAutoPilot
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6665608600445303002, guid: 582d3b16c257dd07eae49096446a906e,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -12144,7 +12168,7 @@ PrefabInstance:
     - target: {fileID: 8084223370500527604, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_IntArgument
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8084223370500527604, guid: 0ae4957731d480d0491f883a240d1b19,
         type: 3}

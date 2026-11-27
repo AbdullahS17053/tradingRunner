@@ -38,7 +38,11 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
+<<<<<<< Updated upstream
   m_IndirectSpecularColor: {r: 0, g: 0, b: 0, a: 1}
+=======
+  m_IndirectSpecularColor: {r: 0.018759035, g: 0.009412773, b: 0.038160864, a: 1}
+>>>>>>> Stashed changes
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -6600,7 +6604,7 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 1
+          m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 1
@@ -9346,6 +9350,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   musicSource: {fileID: 1239475266}
   sfxSource: {fileID: 1239475265}
+  menuBGM: {fileID: 8300000, guid: 9828798c26e0cc643ae6605ad5701b95, type: 3}
+  cityBGM: {fileID: 8300000, guid: 1d0822ee4dfd6482bad2a30a0eb95bfb, type: 3}
+  spaceBGM: {fileID: 8300000, guid: 0b439b1dc8c4a39478422916ff853145, type: 3}
+  labyrinthBGM: {fileID: 8300000, guid: 0602e3e8c3dfc3943b9a4803acbff810, type: 3}
   cyberpunkBGM: {fileID: 8300000, guid: 1d0822ee4dfd6482bad2a30a0eb95bfb, type: 3}
   collectTPSound: {fileID: 8300000, guid: c6f25426102833d118458078f966cb8e, type: 3}
   correctStrategySound: {fileID: 8300000, guid: 394029fecbdf78eb99f7de0b5d770578,
@@ -9357,7 +9365,7 @@ MonoBehaviour:
   fomoOpenGunSound: {fileID: 8300000, guid: e40c7f37b250bee45b360dd6f5c31a93, type: 3}
   fomoAscendSound: {fileID: 8300000, guid: 74fbbd4c83bc94cab8668394e7924044, type: 3}
   fomoDescendSound: {fileID: 8300000, guid: e378c3d5aa79ecfb6a6bc45386626605, type: 3}
-  uiClickSound: {fileID: 0}
+  uiClickSound: {fileID: 8300000, guid: 71016cb3af1e450a9bee7dbbccaf8d4b, type: 3}
 --- !u!82 &1239475265
 AudioSource:
   m_ObjectHideFlags: 0
@@ -13341,6 +13349,7 @@ MonoBehaviour:
   concurrentChunks: 7
   despawnDistance: 150
   enableLabyrinthTurns: 0
+  tJunctionChunkPrefab: {fileID: 0}
   enablePowerUpSpawning: 1
   powerUpInterval: 4
   initialChunkGracePeriod: 1
@@ -13352,10 +13361,24 @@ MonoBehaviour:
     type: 3}
   speedBoostPowerUpPrefab: {fileID: 6588334547211602384, guid: 934e0d03b40039c43bfbf3a9813c3d50,
     type: 3}
+<<<<<<< Updated upstream
   enableEnemySpawning: 1
   enemyInterval: 3
   enemyStartChunk: 2
   enemyPrefab: {fileID: 0}
+=======
+  coinMagnetPowerUpPrefab: {fileID: 6588334547211602384, guid: a8d02845a7474bdb96e1a8911e922179,
+    type: 3}
+  doubleTPPowerUpPrefab: {fileID: 1209053558633307950, guid: 0ea25a6e63f1e3f4bb62115461af50ab,
+    type: 3}
+  weaponUpgradePowerUpPrefab: {fileID: 1511798392051820032, guid: c141bddb397c6d442a9fc665b30468b9,
+    type: 3}
+  slowMotionPowerUpPrefab: {fileID: 5880965123487185117, guid: c704405fdb9a5f7468cf0262a803e863,
+    type: 3}
+  invincibilityPowerUpPrefab: {fileID: 602827494942177698, guid: 7638c3b680a4c1c4ba5a6a46e1d666c6,
+    type: 3}
+  powerUpClearanceRadius: 2.2
+>>>>>>> Stashed changes
 --- !u!1 &1742112176
 GameObject:
   m_ObjectHideFlags: 0
@@ -14457,7 +14480,7 @@ MonoBehaviour:
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 1
+          m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0

@@ -985,7 +985,7 @@ PrefabInstance:
         type: 3}
       propertyPath: coinsParent
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 730452191807533260}
     - target: {fileID: 6699853526681674144, guid: a4155936a1cb9df43b18a6611fbdc366,
         type: 3}
       propertyPath: m_LocalPosition.x

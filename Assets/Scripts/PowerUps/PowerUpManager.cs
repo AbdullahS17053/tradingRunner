@@ -18,6 +18,18 @@ public class PowerUpManager : MonoBehaviour
     private static bool isShuttingDown = false;
     private static PowerUpManager _instance;
 
+    // The project runs with Domain Reload disabled, so static state survives between
+    // play sessions. Reset it on every play so a previous session's shutdown flag
+    // cannot permanently disable power-ups.
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStaticStateOnPlay()
+    {
+        isShuttingDown = false;
+        _instance = null;
+        lastActivatedType = PowerUpType.SpeedBoost;
+        PowerUpHUD.ResetStaticsOnPlay();
+    }
+
     public static bool HasInstance => _instance != null && !isShuttingDown;
 
     public static PowerUpManager Instance
@@ -361,8 +373,44 @@ public class PowerUpManager : MonoBehaviour
 
                     attachedVFX[type] = windInst;
                 }
+                return;
+            }
+            else if (type == PowerUpType.CoinMagnet)
+            {
+                GameObject magnetRoot = new GameObject("PlayerMagnetAura");
+                magnetRoot.transform.SetParent(target, false);
+                magnetRoot.transform.localPosition = new Vector3(0f, 0.8f, 0f);
+
+                // Add purple glow point light
+                Light lt = magnetRoot.AddComponent<Light>();
+                lt.type = LightType.Point;
+                lt.range = 5.5f;
+                lt.intensity = 3.5f;
+                lt.color = new Color(0.85f, 0.15f, 1f);
+
+                // Add orbiting magnetic sparkles
+                GameObject sparklePrefab = LoadVFXPrefab(PowerUpType.CoinMagnet);
+                if (sparklePrefab != null)
+                {
+                    GameObject sp = Instantiate(sparklePrefab, magnetRoot.transform);
+                    sp.transform.localPosition = Vector3.zero;
+                    sp.transform.localScale = Vector3.one * 1.1f;
+                }
+
+                attachedVFX[type] = magnetRoot;
+                return;
             }
             return;
+        }
+
+        if (type == PowerUpType.SpeedBoost)
+        {
+            GameObject shipBoost = CreateShipSpeedBoostFX(target);
+            if (shipBoost != null)
+            {
+                attachedVFX[type] = shipBoost;
+                return;
+            }
         }
 
         GameObject vfxPrefab = LoadVFXPrefab(type);
@@ -373,6 +421,7 @@ public class PowerUpManager : MonoBehaviour
             instance.transform.localRotation = (type == PowerUpType.SpeedBoost) ? Quaternion.Euler(12f, 180f, 0f) : Quaternion.identity;
             instance.transform.localScale = GetVFXScale(type, isSpaceship);
 
+<<<<<<< Updated upstream
             if (type == PowerUpType.SpeedBoost)
             {
                 ParticleSystem[] psList = instance.GetComponentsInChildren<ParticleSystem>();
@@ -413,6 +462,15 @@ public class PowerUpManager : MonoBehaviour
                         ship.thrusterFXRoot.transform.localScale = Vector3.one * 1.6f;
                     }
                 }
+=======
+            if (type == PowerUpType.CoinMagnet)
+            {
+                Light lt = instance.AddComponent<Light>();
+                lt.type = LightType.Point;
+                lt.range = 6.0f;
+                lt.intensity = 3.5f;
+                lt.color = new Color(0.85f, 0.15f, 1f);
+>>>>>>> Stashed changes
             }
 
             attachedVFX[type] = instance;
@@ -423,6 +481,116 @@ public class PowerUpManager : MonoBehaviour
             GameObject aura = CreateProceduralAura(type, target, isSpaceship);
             if (aura != null) attachedVFX[type] = aura;
         }
+    }
+
+    /// <summary>
+    /// Speed-boost FX for the spaceship. The shared flame prefab contains a 1000-particle
+    /// mesh-sphere burst that sits between the chase camera and the ship and whites out the
+    /// view, so the spaceship version is rebuilt as a short, low-opacity engine trail that
+    /// stays well clear of the camera.
+    /// </summary>
+    private GameObject CreateShipSpeedBoostFX(Transform target)
+    {
+        GameObject prefab = LoadVFXPrefab(PowerUpType.SpeedBoost);
+        if (prefab == null) return null;
+
+        GameObject root = Instantiate(prefab, target);
+        root.name = "ShipBoostFX";
+        root.transform.localPosition = new Vector3(0f, 0.02f, -0.55f);
+        root.transform.localRotation = Quaternion.identity;
+        root.transform.localScale = Vector3.one * 0.5f;
+
+        Material trailMaterial = null;
+        int liveSystems = 0;
+
+        ParticleSystem[] systems = root.GetComponentsInChildren<ParticleSystem>(true);
+        for (int i = 0; i < systems.Length; i++)
+        {
+            ParticleSystem ps = systems[i];
+            ParticleSystemRenderer rend = ps.GetComponent<ParticleSystemRenderer>();
+
+            if (rend != null && rend.sharedMaterial != null && trailMaterial == null)
+            {
+                trailMaterial = rend.sharedMaterial;
+            }
+
+            // Drop the mesh-sphere burst entirely: it is the layer that fills the camera.
+            if (rend != null && rend.renderMode == ParticleSystemRenderMode.Mesh)
+            {
+                rend.enabled = false;
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                continue;
+            }
+
+            ParticleSystem.MainModule main = ps.main;
+            main.maxParticles = Mathf.Min(main.maxParticles, 24);
+            main.startSizeMultiplier *= 0.5f;
+            main.startLifetimeMultiplier *= 0.7f;
+            main.startSpeedMultiplier *= 0.75f;
+            main.startColor = new Color(1f, 0.88f, 0.65f, 0.55f);
+
+            ParticleSystem.ColorOverLifetimeModule fade = ps.colorOverLifetime;
+            if (fade.enabled)
+            {
+                Gradient gradient = new Gradient();
+                gradient.SetKeys(
+                    new GradientColorKey[]
+                    {
+                        new GradientColorKey(new Color(1f, 0.95f, 0.8f), 0f),
+                        new GradientColorKey(new Color(0.55f, 0.85f, 1f), 1f)
+                    },
+                    new GradientAlphaKey[]
+                    {
+                        new GradientAlphaKey(0.55f, 0f),
+                        new GradientAlphaKey(0.3f, 0.45f),
+                        new GradientAlphaKey(0f, 1f)
+                    });
+                fade.color = new ParticleSystem.MinMaxGradient(gradient);
+            }
+
+            ps.Play();
+            liveSystems++;
+        }
+
+        if (liveSystems == 0)
+        {
+            // Safety net: keep a tiny hand-built trail instead of falling back to the
+            // screen-filling prefab.
+            GameObject trailObj = new GameObject("BoostTrail");
+            trailObj.transform.SetParent(root.transform, false);
+            trailObj.transform.localRotation = Quaternion.identity;
+
+            ParticleSystem ps = trailObj.AddComponent<ParticleSystem>();
+            ParticleSystem.MainModule main = ps.main;
+            main.loop = true;
+            main.playOnAwake = true;
+            main.startLifetime = 0.22f;
+            main.startSpeed = 4.5f;
+            main.startSize = 0.18f;
+            main.startColor = new Color(0.7f, 0.9f, 1f, 0.5f);
+            main.maxParticles = 40;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+            ParticleSystem.EmissionModule emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 45f;
+
+            ParticleSystem.ShapeModule shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 8f;
+            shape.radius = 0.05f;
+
+            ParticleSystemRenderer rend = trailObj.GetComponent<ParticleSystemRenderer>();
+            if (trailMaterial != null) rend.sharedMaterial = trailMaterial;
+            rend.renderMode = ParticleSystemRenderMode.Stretch;
+            rend.lengthScale = 1.2f;
+            rend.velocityScale = 0.05f;
+
+            ps.Play();
+        }
+
+        return root;
     }
 
     private void RemoveVFX(PowerUpType type)
@@ -555,7 +723,7 @@ public class PowerUpManager : MonoBehaviour
         {
             case PowerUpType.Shield: light.color = new Color(0.2f, 0.7f, 1f); break;
             case PowerUpType.SpeedBoost: light.color = new Color(1f, 0.4f, 0.1f); break;
-            case PowerUpType.CoinMagnet: light.color = new Color(0.2f, 1f, 0.8f); break;
+            case PowerUpType.CoinMagnet: light.color = new Color(0.85f, 0.15f, 1f); break;
             case PowerUpType.DoubleTP: light.color = new Color(1f, 0.85f, 0.1f); break;
             case PowerUpType.WeaponUpgrade: light.color = new Color(1f, 0.1f, 0.2f); break;
             case PowerUpType.SlowMotion: light.color = new Color(0.4f, 0.8f, 1f); break;

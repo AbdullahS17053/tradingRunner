@@ -25,7 +25,9 @@ public class Collectible : MonoBehaviour
                 if (dist <= PowerUpManager.Instance.magnetRadius)
                 {
                     Vector3 targetPos = playerTarget.position + Vector3.up * 0.8f;
-                    transform.position = Vector3.MoveTowards(transform.position, targetPos, PowerUpManager.Instance.magnetPullSpeed * Time.deltaTime);
+                    float baseSpd = RunnerController.Instance != null ? RunnerController.Instance.forwardSpeed : 15f;
+                    float pullSpeed = Mathf.Max(PowerUpManager.Instance.magnetPullSpeed, baseSpd + 14f);
+                    transform.position = Vector3.MoveTowards(transform.position, targetPos, pullSpeed * Time.deltaTime);
                 }
             }
         }

@@ -4,7 +4,7 @@ using UnityEngine.SceneManagement;
 public class PortalTrigger : MonoBehaviour
 {
     [Header("Next Destination")]
-    [Tooltip("If negative, automatically uses cyclic order: Main (0) -> Space (2) -> Labyrinth (3) -> Main (0)")]
+    [Tooltip("If negative, automatically selects another playable world from the scenes enabled in Build Settings.")]
     public int targetSceneIndex = -1;
 
     [Header("FX Settings")]
@@ -82,13 +82,37 @@ public class PortalTrigger : MonoBehaviour
             SoundManager.Instance.PlaySFX(SoundManager.Instance.correctStrategySound);
         }
 
+<<<<<<< Updated upstream
         // 4. Randomly select next world from non-repeating world bag
+=======
+        // 4. Randomly select next playable world (excluding the current world and menu scenes)
+>>>>>>> Stashed changes
         int nextScene = targetSceneIndex;
-        if (nextScene < 0)
+        if (nextScene < 0 || !IsPlayableWorldScene(nextScene))
         {
-            string currentSceneName = SceneManager.GetActiveScene().name;
             int currentIndex = SceneManager.GetActiveScene().buildIndex;
+<<<<<<< Updated upstream
             nextScene = GetNextDestinationScene(currentIndex, currentSceneName);
+=======
+            System.Collections.Generic.List<int> candidateScenes = new System.Collections.Generic.List<int>();
+
+            for (int buildIndex = 0; buildIndex < SceneManager.sceneCountInBuildSettings; buildIndex++)
+            {
+                if (buildIndex != currentIndex && IsPlayableWorldScene(buildIndex))
+                {
+                    candidateScenes.Add(buildIndex);
+                }
+            }
+
+            if (candidateScenes.Count > 0)
+            {
+                nextScene = candidateScenes[Random.Range(0, candidateScenes.Count)];
+            }
+            else
+            {
+                nextScene = currentIndex;
+            }
+>>>>>>> Stashed changes
         }
 
         // 5. Smooth load through LevelLoader (fades to black then loads scene)
@@ -100,6 +124,23 @@ public class PortalTrigger : MonoBehaviour
         {
             SceneManager.LoadScene(nextScene);
         }
+    }
+
+    private static bool IsPlayableWorldScene(int buildIndex)
+    {
+        if (buildIndex < 0 || buildIndex >= SceneManager.sceneCountInBuildSettings)
+        {
+            return false;
+        }
+
+        string scenePath = SceneUtility.GetScenePathByBuildIndex(buildIndex);
+        string sceneName = System.IO.Path.GetFileNameWithoutExtension(scenePath);
+
+        return !sceneName.Equals("MainMenu", System.StringComparison.OrdinalIgnoreCase)
+            && !sceneName.Equals("Menu", System.StringComparison.OrdinalIgnoreCase)
+            && !sceneName.Equals("Main Menu", System.StringComparison.OrdinalIgnoreCase)
+            && scenePath.IndexOf("/Menu", System.StringComparison.OrdinalIgnoreCase) < 0
+            && scenePath.IndexOf("\\Menu", System.StringComparison.OrdinalIgnoreCase) < 0;
     }
 
     public static GameObject CreatePortalGate(Transform parent, Vector3 localPos)
