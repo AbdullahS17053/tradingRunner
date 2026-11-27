@@ -1,7 +1,7 @@
 {
     "dotnet.defaultSolution": "tradingRunner.sln",
     "dotnet.dotnetPath": "C:/Program Files/dotnet/dotnet.exe",
-    "dotrush.roslyn.dotnetSdkDirectory": "C:/Program Files/dotnet/sdk/9.0.321",
+    "dotrush.roslyn.dotnetSdkDirectory": "C:/Program Files/dotnet/sdk/10.0.404",
     "dotrush.msbuildProperties": {
         "DefineConstants": "UNITY_EDITOR"
     },

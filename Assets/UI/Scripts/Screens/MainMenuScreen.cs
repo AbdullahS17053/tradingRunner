@@ -210,86 +210,13 @@ namespace SciFiUI.Screens
                 }
             }
 
-            StartCoroutine(StartGameSequenceRoutine());
-        }
-
-        private IEnumerator StartGameSequenceRoutine()
-        {
-            // 1. Fade out the menu UI (without deactivating this GameObject, so this coroutine continues!)
-            float fadeTime = 0.35f;
-            float elapsed = 0f;
             if (menuCanvasGroup != null)
             {
                 menuCanvasGroup.blocksRaycasts = false;
                 menuCanvasGroup.interactable = false;
-                while (elapsed < fadeTime)
-                {
-                    elapsed += Time.deltaTime;
-                    menuCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / fadeTime);
-                    yield return null;
-                }
-                menuCanvasGroup.alpha = 0f;
             }
 
-            // 2. Trigger SitToStand animation on player
-            if (playerAnimator != null)
-            {
-                playerAnimator.ResetTrigger("SitToStand");
-                playerAnimator.SetTrigger("SitToStand");
-            }
-
-            // 3. Smooth Camera Swoop from menu view to behind runner
-            Vector3 camStartPos = menuCamera != null ? menuCamera.transform.position : menuCamPosition;
-            Quaternion camStartRot = menuCamera != null ? menuCamera.transform.rotation : Quaternion.Euler(menuCamRotation);
-
-            Vector3 playerPos = player != null ? player.transform.position : Vector3.zero;
-            Quaternion playerRot = player != null ? player.transform.rotation : Quaternion.identity;
-
-            Vector3 camTargetPos = playerPos + (playerRot * runnerCamOffset);
-            Quaternion camTargetRot = playerRot * Quaternion.Euler(runnerCamRotation);
-
-            elapsed = 0f;
-            while (elapsed < cameraTransitionDuration)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / cameraTransitionDuration);
-                // Smooth ease in-out curve
-                float smoothT = Mathf.SmoothStep(0f, 1f, t);
-
-                if (player != null)
-                {
-                    playerPos = player.transform.position;
-                    playerRot = player.transform.rotation;
-                    camTargetPos = playerPos + (playerRot * runnerCamOffset);
-                    camTargetRot = playerRot * Quaternion.Euler(runnerCamRotation);
-                }
-
-                if (menuCamera != null)
-                {
-                    menuCamera.transform.position = Vector3.Lerp(camStartPos, camTargetPos, smoothT);
-                    menuCamera.transform.rotation = Quaternion.Slerp(camStartRot, camTargetRot, smoothT);
-                }
-
-                yield return null;
-            }
-
-            // Snap to exact target behind player
-            if (menuCamera != null)
-            {
-                menuCamera.transform.position = camTargetPos;
-                menuCamera.transform.rotation = camTargetRot;
-            }
-
-            // 4. Brief pause as the camera finishes settling behind player while standing up
-            if (standCompletionWait > 0f)
-            {
-                yield return new WaitForSeconds(standCompletionWait);
-            }
-
-            // Keep runnerController disabled in MainMenu so player does NOT slide across the floor.
-            // When the scene fades to black, the character is upright, preventing any running in place in the menu.
-
-            // 5. Load City gameplay scene via LevelLoader (screen fades to black)
+            // Immediately fade to black and load the gameplay level (skipping camera swoop & stand-up sequence)
             string currentSceneName = SceneManager.GetActiveScene().name;
             string sceneToLoad = !string.IsNullOrEmpty(targetGameplaySceneName) ? targetGameplaySceneName : "City";
 
